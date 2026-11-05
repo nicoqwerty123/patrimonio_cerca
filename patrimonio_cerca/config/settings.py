@@ -1,8 +1,10 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "dev-cambiar-en-produccion"
+# En producción, definir la variable de entorno DJANGO_SECRET_KEY
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-cambiar-en-produccion")
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
