@@ -1,0 +1,73 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf" content="{{ csrf_token }}">
+  <meta name="description" content="Descubre sitios patrimoniales y actividades culturales cerca de ti en Chile.">
+  <title>{% block titulo %}Patrimonio cerca{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'patrimonio/css/app.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block clase %}{% endblock %}">
+
+  <!-- Skip link para accesibilidad -->
+  <a class="skip-link" href="#contenido-principal">Saltar al contenido</a>
+
+  <header class="barra" role="banner">
+    <a class="marca" href="{% url 'mapa' %}" aria-label="Patrimonio cerca — Inicio">Patrimonio cerca</a>
+
+    <nav aria-label="Navegación principal">
+      <a href="{% url 'mapa' %}"
+         {% if request.resolver_match.url_name == 'mapa' %}aria-current="page"{% endif %}>
+        Mapa
+      </a>
+      <a href="{% url 'mi_ruta' %}"
+         {% if request.resolver_match.url_name == 'mi_ruta' %}aria-current="page"{% endif %}>
+        Mi ruta
+        <span class="insignia neutra" id="insignia-ruta"
+              {% if not n_favoritos %}hidden{% endif %}
+              aria-label="{{ n_favoritos }} lugares guardados">{{ n_favoritos }}</span>
+      </a>
+      <a href="{% url 'alertas' %}"
+         {% if request.resolver_match.url_name == 'alertas' %}aria-current="page"{% endif %}>
+        Alertas
+        <span class="insignia" id="insignia"
+              {% if not avisos_pendientes %}hidden{% endif %}
+              aria-label="{{ avisos_pendientes }} alertas pendientes">{{ avisos_pendientes }}</span>
+      </a>
+    </nav>
+
+    <!-- Perfil / Autenticación -->
+    <div class="barra-auth">
+      {% if user.is_authenticated %}
+        <a href="{% url 'perfil' %}" class="perfil-pill" title="Ver mi perfil">
+          <span class="avatar-inicial" aria-hidden="true">{{ user.username|first|upper }}</span>
+          <span class="perfil-nombre">{{ user.username }}</span>
+        </a>
+        <a href="{% url 'logout' %}" class="boton-salir" title="Cerrar sesión">Salir</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="auth-enlace">Entrar</a>
+        <a href="{% url 'registro' %}" class="boton boton-sm">Crear cuenta</a>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if messages %}
+  <div class="mensajes" role="status" aria-live="polite">
+    {% for m in messages %}<p class="mensaje {{ m.tags }}">{{ m }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% block contenido %}{% endblock %}
+
+  <div class="avisos" id="avisos" aria-live="polite" aria-atomic="false"></div>
+  {{ tiles|json_script:"tiles-cfg" }}
+  <script>window.URLS = {pendientes: "{% url 'api_pendientes' %}", leer: "{% url 'api_leer' %}"};</script>
+  <script src="{% static 'patrimonio/js/avisos.js' %}"></script>
+  {% block js %}{% endblock %}
+</body>
+</html>

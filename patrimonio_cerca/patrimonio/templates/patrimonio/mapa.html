@@ -1,0 +1,132 @@
+{% extends "patrimonio/base.html" %}
+{% load static %}
+{% block clase %}pantalla-mapa{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+{% endblock %}
+
+{% block contenido %}
+<div class="visor" id="contenido-principal">
+  <!-- Panel lateral de búsqueda y resultados -->
+  <section class="panel" aria-label="Búsqueda y resultados">
+
+    <!-- Buscador -->
+    <form class="buscador" id="form-buscar" autocomplete="off" role="search">
+      <label for="q" class="sr-only">Comuna o dirección</label>
+      <input id="q" name="q" type="search"
+             list="lista-comunas"
+             placeholder="Buscar comuna, dirección o lugar"
+             autocomplete="off">
+      <datalist id="lista-comunas">{% for c in comunas %}<option value="{{ c }}">{% endfor %}</datalist>
+      <button type="submit">Buscar</button>
+      <button type="button" class="secundario" id="btn-ubicacion" title="Usar mi ubicación actual">
+        📍 Mi ubicación
+      </button>
+    </form>
+
+    <!-- Aviso contextual -->
+    <p class="aviso" id="aviso" hidden role="alert"></p>
+
+    <!-- Filtros -->
+    <div class="filtros">
+      <!-- Radio de búsqueda -->
+      <div class="campo-radio">
+        <label for="radio">Radio de búsqueda</label>
+        <output id="radio-valor" for="radio">{{ radio|floatformat:0 }} km</output>
+        <input type="range" id="radio" min="1" max="20" step="1" value="{{ radio|floatformat:0 }}"
+               aria-label="Radio de búsqueda en kilómetros">
+      </div>
+
+      <!-- Chips de categoría -->
+      <div class="chips" id="chips" role="group" aria-label="Filtrar por categoría">
+        {% for c in categorias %}
+        <button type="button" class="chip" data-id="{{ c.pk }}" aria-pressed="false"
+                style="--c:{{ c.color }}">
+          <span class="punto" aria-hidden="true"></span>{{ c.nombre }}
+        </button>
+        {% endfor %}
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="fila-filtros">
+        <label class="casilla"><input type="checkbox" id="f-gratis"> Gratuitos</label>
+        <label class="casilla"><input type="checkbox" id="f-pase"> Con pase cultural</label>
+        <label class="casilla"><input type="checkbox" id="f-abierto"> Abierto o en curso ahora</label>
+      </div>
+
+      <!-- Selectores -->
+      <div class="fila-filtros">
+        <select id="f-tipo" aria-label="Filtrar por tipo">
+          <option value="">Sitios y actividades</option>
+          <option value="sitio">Solo sitios patrimoniales</option>
+          <option value="actividad">Solo actividades</option>
+        </select>
+        <select id="f-orden" aria-label="Ordenar resultados por">
+          <option value="distancia">Más cercanos primero</option>
+          <option value="nombre">Por nombre</option>
+          <option value="costo">Más baratos primero</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Encabezado de lista -->
+    <div class="encabezado-lista">
+      <h2 id="titulo-lista">Cerca de ti</h2>
+      <span id="conteo" aria-live="polite" aria-atomic="true"></span>
+    </div>
+
+    <!-- Leyenda -->
+    <p class="leyenda" aria-hidden="true">
+      <span class="pin chico" style="--c:#718096"></span> Sitio patrimonial
+      <span class="pin actividad chico" style="--c:#718096"></span> Actividad
+    </p>
+
+    <!-- Lista de resultados -->
+    <ol class="lista" id="lista" aria-label="Resultados de búsqueda"></ol>
+
+    <!-- Estado vacío -->
+    <div class="vacio" id="vacio" hidden role="status">
+      <p><strong>No encontramos nada en <span id="vacio-radio"></span> km.</strong></p>
+      <p>Prueba con un radio mayor o quita algún filtro.</p>
+      <div class="acciones">
+        <button type="button" id="btn-ampliar">Ampliar a 10 km</button>
+        <button type="button" class="secundario" id="btn-limpiar">Quitar filtros</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Mapa interactivo -->
+  <div class="mapa-caja">
+    <div id="mapa" role="region" aria-label="Mapa interactivo de patrimonio cultural"></div>
+    <article class="resumen" id="resumen" hidden aria-live="polite"></article>
+  </div>
+</div>
+
+<!-- Diálogo de permisos de ubicación -->
+<dialog id="permiso" aria-labelledby="permiso-titulo" aria-describedby="permiso-desc">
+  <h2 id="permiso-titulo">Muestra lo que hay cerca</h2>
+  <p id="permiso-desc">Para mostrarte sitios y actividades cercanos necesitamos tu ubicación. La usamos solo mientras navegas: no la guardamos en nuestros servidores.</p>
+  <p>Si prefieres, puedes omitir este paso y buscar por comuna o dirección.</p>
+  <div class="acciones">
+    <button type="button" id="permitir">Permitir ubicación</button>
+    <button type="button" class="secundario" id="omitir">Omitir por ahora</button>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+  window.CFG = {
+    api: "{% url 'api_recursos' %}",
+    buscar: "{% url 'api_buscar' %}",
+    ubic: "{% url 'api_ubicacion' %}",
+    fav: "{{ fav_url }}",
+    radio: {{ radio|floatformat:0 }}
+  };
+</script>
+<script src="{% static 'patrimonio/js/mapa.js' %}"></script>
+{% endblock %}

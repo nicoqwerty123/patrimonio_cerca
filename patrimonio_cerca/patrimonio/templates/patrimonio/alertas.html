@@ -1,0 +1,105 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Alertas · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<main class="bandeja" id="contenido-principal">
+  <h1>Alertas</h1>
+  <p class="intro">
+    {% if con_ubicacion %}
+      Actividades a menos de {{ radio|floatformat:0 }} km de tu ubicación, ordenadas por fecha.
+    {% else %}
+      Estás viendo todas las actividades.
+      <a href="{% url 'mapa' %}">Activa tu ubicación en el mapa</a> para ver solo las cercanas.
+    {% endif %}
+  </p>
+
+  <!-- Alertas pendientes hoy (destacadas) -->
+  {% if pendientes %}
+  <section class="seccion destacada" aria-labelledby="pendientes-titulo">
+    <div class="seccion-cab">
+      <h2 id="pendientes-titulo">Para avisarte hoy</h2>
+      <form method="post" action="{% url 'api_leer' %}" id="form-leer-todas">
+        {% csrf_token %}
+        <input type="hidden" name="todas" value="1">
+        <button type="submit" class="enlace">Marcar como vistas</button>
+      </form>
+    </div>
+    <ul class="filas" aria-label="Alertas de hoy">
+      {% for a in pendientes %}
+      <li class="fila">
+        <div>
+          <a class="titulo-fila" href="{% url 'detalle' a.recurso.pk %}">{{ a.recurso.titulo }}</a>
+          <p>{{ a.mensaje }}</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <!-- En curso -->
+  <section class="seccion" aria-labelledby="activas-titulo">
+    <div class="seccion-cab">
+      <h2 id="activas-titulo">En curso</h2>
+      {% if activas %}<span>{{ activas|length }} actividad{% if activas|length != 1 %}es{% endif %}</span>{% endif %}
+    </div>
+    {% if activas %}
+    <ul class="filas" aria-label="Actividades en curso">
+      {% for r, d in activas %}{% include "patrimonio/_fila_actividad.html" %}{% endfor %}
+    </ul>
+    {% else %}
+    <p class="vacio-texto">
+      No hay actividades en curso{% if con_ubicacion %} dentro de tu radio.
+      <a href="{% url 'mapa' %}">Amplíalo desde el mapa</a>{% endif %}.
+    </p>
+    {% endif %}
+  </section>
+
+  <!-- Próximas -->
+  <section class="seccion" aria-labelledby="proximas-titulo">
+    <div class="seccion-cab">
+      <h2 id="proximas-titulo">Próximas</h2>
+      {% if proximas %}<span>{{ proximas|length }} actividad{% if proximas|length != 1 %}es{% endif %}</span>{% endif %}
+    </div>
+    {% if proximas %}
+    <ul class="filas" aria-label="Actividades próximas">
+      {% for r, d in proximas %}{% include "patrimonio/_fila_actividad.html" %}{% endfor %}
+    </ul>
+    {% else %}
+    <p class="vacio-texto">
+      No hay actividades próximas{% if con_ubicacion %} dentro de tu radio.
+      <a href="{% url 'mapa' %}">Amplíalo desde el mapa</a>{% endif %}.
+    </p>
+    {% endif %}
+  </section>
+
+  <!-- Mis alertas configuradas -->
+  <section class="seccion" aria-labelledby="mis-alertas-titulo">
+    <div class="seccion-cab">
+      <h2 id="mis-alertas-titulo">Mis alertas</h2>
+      {% if mis_alertas %}<span>{{ mis_alertas|length }} alerta{% if mis_alertas|length != 1 %}s{% endif %}</span>{% endif %}
+    </div>
+    {% if mis_alertas %}
+    <ul class="filas" aria-label="Alertas configuradas">
+      {% for a in mis_alertas %}
+      <li class="fila">
+        <div class="fila-texto">
+          <a class="titulo-fila" href="{% url 'detalle' a.recurso.pk %}">{{ a.recurso.titulo }}</a>
+          <p>{{ a.recurso.fechas_texto }} · {{ a.get_dias_antes_display }} · aviso el {{ a.fecha_aviso|date:"j \d\e F" }}</p>
+        </div>
+        <form method="post" action="{% url 'alerta_eliminar' a.recurso.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="enlace" aria-label="Quitar alerta de {{ a.recurso.titulo }}">Quitar</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="vacio-texto">
+      Todavía no tienes alertas. Usa «Avisarme» en cualquier actividad para configurar una.
+    </p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Iniciar sesión · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<div class="auth-contenedor" id="contenido-principal">
+  <div class="auth-card">
+    <div class="auth-header">
+      <span class="auth-icono" aria-hidden="true">⬡</span>
+      <h1>Iniciar sesión</h1>
+      <p class="auth-subtitulo">Accede a tu cuenta para guardar y sincronizar tus rutas y alertas culturales.</p>
+    </div>
+
+    {% if form.errors %}
+    <div class="auth-error-box" role="alert">
+      <p>Tu nombre de usuario y contraseña no coinciden. Por favor, verifica tus credenciales.</p>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}" class="auth-form" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="auth-campo">
+        <label for="{{ form.username.id_for_label }}">Usuario</label>
+        {{ form.username }}
+      </div>
+
+      <div class="auth-campo">
+        <label for="{{ form.password.id_for_label }}">Contraseña</label>
+        {{ form.password }}
+      </div>
+
+      <button type="submit" class="boton boton-full" style="margin-top: 0.75rem;">
+        Iniciar sesión
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>¿No tienes una cuenta todavía? <a href="{% url 'registro' %}" class="enlace-destacado">Crear una cuenta</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

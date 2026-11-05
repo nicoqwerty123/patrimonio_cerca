@@ -1,0 +1,84 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Mi Perfil · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<div class="bandeja" id="contenido-principal">
+  <!-- Cabecera de perfil -->
+  <div class="perfil-cabecera">
+    <div class="perfil-avatar-lg">
+      {{ usuario.username|first|upper }}
+    </div>
+    <div class="perfil-info">
+      <h1>{{ usuario.username }}</h1>
+      <p class="perfil-meta">Miembro desde {{ usuario.date_joined|date:"F \d\e Y" }}</p>
+    </div>
+  </div>
+
+  <!-- Métricas principales -->
+  <div class="perfil-metricas">
+    <div class="metrica-card">
+      <span class="metrica-numero">{{ total_favoritos }}</span>
+      <span class="metrica-label">Lugares en tu ruta</span>
+      <a href="{% url 'mi_ruta' %}" class="metrica-link">Ver recorrido →</a>
+    </div>
+    <div class="metrica-card">
+      <span class="metrica-numero">{{ total_alertas }}</span>
+      <span class="metrica-label">Alertas programadas</span>
+      <a href="{% url 'alertas' %}" class="metrica-link">Gestionar alertas →</a>
+    </div>
+  </div>
+
+  <!-- Configuración de correo electrónico para notificaciones -->
+  <section class="perfil-seccion">
+    <h2>Preferencias de Notificaciones por Correo</h2>
+    <p class="perfil-desc">
+      Te enviaremos avisos y recordatorios de actividades culturales directamente a esta dirección.
+    </p>
+
+    <form method="post" action="{% url 'perfil' %}" class="perfil-form-email">
+      {% csrf_token %}
+      <div class="campo-grupo">
+        <label for="email">Tu Correo Electrónico</label>
+        <div class="input-boton-grupo">
+          <input type="email" id="email" name="email" value="{{ usuario.email }}"
+                 placeholder="ejemplo@correo.com" required>
+          <button type="submit" class="boton">Actualizar correo</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Lugares favoritos recientes -->
+  <section class="perfil-seccion">
+    <div class="seccion-cab">
+      <h2>Tus últimos lugares guardados</h2>
+      <a href="{% url 'mi_ruta' %}" class="enlace-destacado">Ver todos</a>
+    </div>
+
+    {% if mis_favoritos %}
+    <ul class="filas">
+      {% for f in mis_favoritos %}
+      <li class="fila">
+        <div class="fila-texto">
+          <a class="titulo-fila" href="{% url 'detalle' f.recurso.pk %}">{{ f.recurso.titulo }}</a>
+          <p>{{ f.recurso.categoria.nombre }} · {{ f.recurso.comuna }} · {{ f.recurso.costo_texto }}</p>
+        </div>
+        <a class="boton secundario" style="font-size:12px; padding:6px 12px;" href="{% url 'detalle' f.recurso.pk %}">Ver ficha</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="vacio-texto">
+      Aún no has guardado lugares. Explora el <a href="{% url 'mapa' %}">mapa interactivo</a> y pulsa "Guardar en mi ruta".
+    </p>
+    {% endif %}
+  </section>
+
+  <!-- Opciones de cuenta -->
+  <div class="perfil-acciones-finales">
+    <a href="{% url 'logout' %}" class="boton secundario" style="color:var(--clr-red); border-color:var(--clr-red);">
+      Cerrar sesión
+    </a>
+  </div>
+</div>
+{% endblock %}

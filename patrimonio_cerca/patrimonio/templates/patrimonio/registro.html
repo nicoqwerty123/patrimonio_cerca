@@ -1,0 +1,68 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Crear cuenta · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<div class="auth-contenedor" id="contenido-principal">
+  <div class="auth-card">
+    <div class="auth-header">
+      <span class="auth-icono" aria-hidden="true">⬡</span>
+      <h1>Crear tu cuenta</h1>
+      <p class="auth-subtitulo">Guarda tus lugares favoritos y recibe recordatorios antes de cada actividad cultural.</p>
+    </div>
+
+    {% if form.errors %}
+    <div class="auth-error-box" role="alert">
+      <strong>Por favor corrige los siguientes errores:</strong>
+      <ul>
+        {% for field in form %}
+          {% for error in field.errors %}
+            <li>{{ field.label }}: {{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'registro' %}" class="auth-form" novalidate>
+      {% csrf_token %}
+
+      <div class="auth-campo">
+        <label for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+        {{ form.username }}
+        {% if form.username.help_text %}
+          <small class="auth-ayuda">{{ form.username.help_text }}</small>
+        {% endif %}
+      </div>
+
+      <div class="auth-campo">
+        <label for="{{ form.email.id_for_label }}">Correo electrónico <span class="opcional">(opcional)</span></label>
+        {{ form.email }}
+      </div>
+
+      <div class="auth-campo">
+        <label for="{{ form.password1.id_for_label }}">Contraseña</label>
+        {{ form.password1 }}
+        {% if form.password1.help_text %}
+          <small class="auth-ayuda">Mínimo 8 caracteres, no enteramente numérica.</small>
+        {% endif %}
+      </div>
+
+      <div class="auth-campo">
+        <label for="{{ form.password2.id_for_label }}">Confirma tu contraseña</label>
+        {{ form.password2 }}
+      </div>
+
+      <button type="submit" class="boton boton-full" style="margin-top: 0.75rem;">
+        Registrarse y comenzar
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>¿Ya tienes una cuenta registrada? <a href="{% url 'login' %}" class="enlace-destacado">Inicia sesión aquí</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

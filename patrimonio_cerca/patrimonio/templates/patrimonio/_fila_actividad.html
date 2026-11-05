@@ -1,0 +1,8 @@
+<li class="fila">
+  <div class="fecha" aria-hidden="true"><strong>{{ r.fecha_inicio|date:"j" }}</strong><span>{{ r.fecha_inicio|date:"M" }}</span></div>
+  <div class="fila-texto">
+    <a class="titulo-fila" href="{% url 'detalle' r.pk %}">{{ r.titulo }}</a>
+    <p>{{ r.fechas_texto }} · {{ r.comuna }} · {{ r.costo_texto }}{% if d is not None %} · a {{ d|floatformat:1 }} km{% endif %}</p>
+  </div>
+  {% include "patrimonio/_alerta_form.html" with next=request.path dias_sel=1 sufijo="b" %}
+</li>

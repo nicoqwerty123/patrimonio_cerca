@@ -1,0 +1,163 @@
+{% extends "patrimonio/base.html" %}
+{% load static %}
+{% block titulo %}{{ r.titulo }} · Patrimonio cerca{% endblock %}
+{% block head %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endblock %}
+
+{% block contenido %}
+<main class="ficha" id="contenido-principal">
+  <!-- Volver -->
+  <a class="volver" href="{% url 'mapa' %}"
+     onclick="if(history.length>1){history.back();return false;}">
+    Volver al mapa
+  </a>
+
+  <!-- Cabecera de la ficha -->
+  <header class="ficha-cabecera" style="--c:{{ r.categoria.color }}">
+    <p class="categoria">
+      <span class="punto" style="background:{{ r.categoria.color }}" aria-hidden="true"></span>
+      {{ r.categoria.nombre }} · {{ r.get_tipo_display }}
+    </p>
+    <h1>{{ r.titulo }}</h1>
+
+    <!-- Etiquetas de estado -->
+    <ul class="etiquetas" aria-label="Características">
+      <li class="{% if r.es_gratis %}ok{% endif %}">{{ r.costo_texto }}</li>
+      {% if r.acepta_pase_cultural %}<li class="pase">Acepta pase cultural</li>{% endif %}
+      <li>Valor patrimonial {{ r.get_valor_patrimonial_display|lower }}</li>
+      {% if r.estado %}<li class="estado-{{ r.estado }}">{{ r.estado_texto }}</li>{% endif %}
+      {% if r.abierto_ahora is True %}
+        <li class="ok">Abierto ahora</li>
+      {% elif r.abierto_ahora is False %}
+        <li class="cerrado">Cerrado ahora</li>
+      {% endif %}
+    </ul>
+
+    <!-- Acciones principales (CTA) -->
+    <div class="acciones-ficha">
+      <a class="boton" href="{{ ruta_url }}" target="_blank" rel="noopener noreferrer"
+         aria-label="Trazar ruta en Google Maps hacia {{ r.titulo }}">
+        🗺 Trazar ruta
+      </a>
+      <form method="post" action="{% url 'fav_toggle' r.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="secundario">
+          {% if es_fav %}♥ Quitar de mi ruta{% else %}♡ Guardar en mi ruta{% endif %}
+        </button>
+      </form>
+      {% if r.tipo == "actividad" %}
+      <a class="boton secundario" href="{% url 'calendario' r.pk %}"
+         aria-label="Descargar archivo de calendario para {{ r.titulo }}">
+        📅 Agregar al calendario
+      </a>
+      {% endif %}
+      {% if r.sitio_web %}
+      <a class="boton secundario" href="{{ r.sitio_web }}" target="_blank" rel="noopener noreferrer"
+         aria-label="Sitio web oficial de {{ r.titulo }}">
+        🔗 Sitio web
+      </a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Cuerpo de la ficha -->
+  <div class="ficha-cuerpo">
+    <!-- Columna principal: descripción + datos -->
+    <section aria-label="Información del recurso">
+      <p class="descripcion">{{ r.descripcion }}</p>
+
+      <dl class="datos">
+        <div>
+          <dt>Dirección</dt>
+          <dd>{{ r.direccion }}, {{ r.comuna }}</dd>
+        </div>
+        <div>
+          <dt>Horario</dt>
+          <dd>{{ r.horario|default:"Sin información" }}</dd>
+        </div>
+        {% if r.fechas_texto %}
+        <div>
+          <dt>Fechas</dt>
+          <dd>{{ r.fechas_texto }}</dd>
+        </div>
+        {% endif %}
+        <div>
+          <dt>Costo</dt>
+          <dd>
+            {{ r.costo_texto }}
+            {% if r.acepta_pase_cultural %} · con pase cultural{% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>Inscripción</dt>
+          <dd>{{ r.req_inscripcion }}</dd>
+        </div>
+        <div>
+          <dt>Valor</dt>
+          <dd>{{ r.get_valor_patrimonial_display }}</dd>
+        </div>
+      </dl>
+
+      <p class="fuente">
+        Fuente: {{ r.fuente|default:"sin registro" }}.
+        Actualizado el {{ r.fecha_actualizacion|date:"j \d\e F \d\e Y" }}.
+        {% if not r.verificado %}
+        <span class="sin-verificar">Información en revisión: confirma horario y costo con el organizador.</span>
+        {% endif %}
+      </p>
+    </section>
+
+    <!-- Columna lateral: mapa mini + alertas -->
+    <aside aria-label="Mapa y alertas">
+      <div id="mini-mapa"
+           data-lat="{{ r.latitud }}"
+           data-lng="{{ r.longitud }}"
+           data-color="{{ r.categoria.color }}"
+           role="img"
+           aria-label="Mapa de ubicación de {{ r.titulo }}">
+      </div>
+
+      {% if puede_alertar %}
+      <div class="bloque-alerta">
+        <h2>{% if alerta %}Tu alerta activa{% else %}Configurar alerta{% endif %}</h2>
+        {% if alerta %}
+          <p>{{ alerta.get_dias_antes_display }}: te avisamos el {{ alerta.fecha_aviso|date:"j \d\e F" }}.</p>
+        {% else %}
+          <p>Elige cuánto antes quieres que te avisemos sobre esta actividad.</p>
+        {% endif %}
+        {% include "patrimonio/_alerta_form.html" with next=request.path tiene=alerta dias_sel=dias_sel sufijo="det" %}
+        {% if alerta %}
+        <form method="post" action="{% url 'alerta_eliminar' r.pk %}" class="form-quitar">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="enlace">Quitar alerta</button>
+        </form>
+        {% endif %}
+      </div>
+      {% elif r.tipo == "sitio" %}
+      <p class="nota">
+        Los sitios patrimoniales no tienen fecha, así que no hay alertas para ellos.
+        Revisa la <a href="{% url 'alertas' %}">bandeja de alertas</a> para ver actividades cerca.
+      </p>
+      {% endif %}
+    </aside>
+  </div>
+</main>
+{% endblock %}
+
+{% block js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const tiles = JSON.parse(document.getElementById("tiles-cfg").textContent);
+  const el = document.getElementById("mini-mapa");
+  if (el) {
+    const m = L.map(el, {scrollWheelZoom: false, zoomControl: true})
+               .setView([el.dataset.lat, el.dataset.lng], 16);
+    L.tileLayer(tiles.url, {maxZoom: 19, attribution: tiles.attr}).addTo(m);
+    L.circleMarker(
+      [el.dataset.lat, el.dataset.lng],
+      {radius: 10, color: "#fff", weight: 3, fillColor: el.dataset.color, fillOpacity: 1}
+    ).addTo(m);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,9 @@
+<form method="post" action="{% url 'alerta_guardar' r.pk %}" class="form-alerta">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <label class="sr" for="dias-{{ r.pk }}-{{ sufijo }}">Aviso previo</label>
+  <select name="dias_antes" id="dias-{{ r.pk }}-{{ sufijo }}">
+    {% for valor, texto in dias_aviso %}<option value="{{ valor }}" {% if valor == dias_sel %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+  </select>
+  <button type="submit">{% if tiene or r.pk in ids_con_alerta %}Actualizar alerta{% else %}Avisarme{% endif %}</button>
+</form>
