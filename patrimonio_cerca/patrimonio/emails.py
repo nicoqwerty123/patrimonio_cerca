@@ -1,4 +1,7 @@
+import json
 import logging
+import os
+import urllib.request
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
@@ -6,9 +9,39 @@ logger = logging.getLogger(__name__)
 
 
 def _enviar_correo(asunto, mensaje_plano, mensaje_html, destinatario):
-    """Envia un correo electronico multipart (texto + HTML) de forma segura."""
+    """Envia un correo electronico via Brevo API si esta disponible o via Django EmailBackend."""
     if not destinatario:
         return False
+
+    brevo_api_key = getattr(settings, "BREVO_API_KEY", None) or os.environ.get("BREVO_API_KEY")
+    sender_email = getattr(settings, "BREVO_SENDER_EMAIL", None) or os.environ.get("BREVO_SENDER_EMAIL", "nmirandam@usm.cl")
+
+    # Intentar envio directo via Brevo API v3
+    if brevo_api_key:
+        try:
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=json.dumps({
+                    "sender": {"name": "Patrimonio Cerca", "email": sender_email},
+                    "to": [{"email": destinatario}],
+                    "subject": asunto,
+                    "htmlContent": mensaje_html,
+                    "textContent": mensaje_plano,
+                }).encode("utf-8"),
+                headers={
+                    "api-key": brevo_api_key,
+                    "Content-Type": "application/json",
+                    "accept": "application/json",
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201, 202):
+                    return True
+        except Exception as e:
+            logger.warning(f"Fallo envio via Brevo API: {e}. Intentando fallback via Django Mail...")
+
+    # Fallback estandar de Django (SMTP o Console)
     try:
         from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "Patrimonio Cerca <notificaciones@patrimoniocerca.cl>")
         email = EmailMultiAlternatives(
