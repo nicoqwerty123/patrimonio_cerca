@@ -448,13 +448,35 @@ select {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  font-size: var(--text-sm);
-  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: var(--r-full);
+  background: var(--clr-surface);
+  border: 1.5px solid var(--clr-border);
   color: var(--clr-ink-mid);
-  font-weight: 500;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
   transition: var(--ease-fast);
 }
-.casilla:hover { color: var(--clr-ink); }
+.casilla:hover {
+  border-color: var(--clr-blue);
+  color: var(--clr-blue);
+  background: var(--clr-blue-xlight);
+}
+.casilla:has(input:checked) {
+  background: var(--clr-blue-light);
+  border-color: var(--clr-blue);
+  color: var(--clr-blue);
+  box-shadow: 0 1px 4px rgba(26,61,107,0.18);
+}
+.casilla input[type="checkbox"] {
+  accent-color: var(--clr-blue);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
 
 /* Encabezado de lista */
 .encabezado-lista {
@@ -674,7 +696,7 @@ select {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 5px 11px;
+  padding: 6px 13px;
   border-radius: var(--r-full);
   background: var(--clr-surface);
   color: var(--clr-ink);
@@ -684,22 +706,30 @@ select {
   cursor: pointer;
   transition: var(--ease-fast);
   letter-spacing: 0.01em;
-  box-shadow: none;
+  box-shadow: var(--shadow-xs);
+  user-select: none;
 }
 .chip:hover {
   border-color: var(--clr-blue);
   color: var(--clr-blue);
   background: var(--clr-blue-xlight);
-  transform: none;
+  transform: translateY(-1px);
 }
-.chip .punto { background: var(--c); }
+.chip .punto {
+  background: var(--c);
+  transition: var(--ease-fast);
+}
 .chip[aria-pressed="true"] {
   background: var(--clr-ink);
   color: #fff;
   border-color: var(--clr-ink);
-  box-shadow: none;
+  box-shadow: 0 2px 6px rgba(28,35,41,.3);
+  transform: translateY(-1px);
 }
-.chip[aria-pressed="true"] .punto { box-shadow: 0 0 0 2px #fff; }
+.chip[aria-pressed="true"] .punto {
+  box-shadow: 0 0 0 2px #fff;
+  transform: scale(1.15);
+}
 
 /* Texto de apertura */
 .abierto     { color: var(--clr-green); font-weight: 600; }
@@ -1079,43 +1109,250 @@ dialog .acciones { margin-top: var(--sp-5); }
 /* ══════════════════════════════════════════════════
    13. RESPONSIVE — Mobile First
    ══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   13. RESPONSIVE — Mobile First y Adaptabilidad
+   ══════════════════════════════════════════════════ */
+/* Botón alternador flotante para celular (oculto en escritorio) */
+.switch-movil-wrap {
+  display: none;
+}
+
 @media (max-width: 860px) {
-  :root { --navbar-h: 56px; }
+  :root {
+    --navbar-h: auto;
+  }
 
-  .barra { padding: 0 var(--sp-4); }
-  .marca { font-size: var(--text-md); }
-  .barra nav a { padding: var(--sp-2) var(--sp-2); font-size: var(--text-xs); }
+  html, body {
+    overflow-x: hidden;
+  }
 
-  /* Mapa mobile */
-  .pantalla-mapa { height: auto; overflow: visible; }
-  .visor { display: flex; flex-direction: column-reverse; }
-  .mapa-caja { height: 50vh; min-height: 300px; }
-  .panel { overflow: visible; border-right: 0; border-top: 1px solid var(--clr-border); }
-  .resumen { left: var(--sp-2); right: var(--sp-2); bottom: var(--sp-2); width: auto; max-height: 70%; }
+  /* Navbar adaptable en dos niveles limpios */
+  .barra {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 14px 8px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    justify-content: space-between;
+  }
+
+  .marca {
+    font-size: var(--text-base);
+  }
+
+  .barra-auth {
+    margin-left: auto;
+    gap: 6px;
+  }
+  .barra-auth .boton-sm {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+  .barra-auth .auth-enlace {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .barra nav {
+    width: 100%;
+    order: 3;
+    display: flex;
+    justify-content: space-around;
+    padding-top: 6px;
+    border-top: 1px solid var(--clr-border);
+    gap: 4px;
+  }
+
+  .barra nav a {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 7px 6px;
+    font-size: 12px;
+    border-radius: var(--r-md);
+  }
+
+  /* Alternador móvil flotante */
+  .switch-movil-wrap {
+    display: block;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1500;
+    pointer-events: auto;
+  }
+
+  .btn-switch-movil {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--clr-ink);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: var(--r-full);
+    font-size: 14px;
+    font-weight: 700;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 16px rgba(28,35,41,0.35);
+    cursor: pointer;
+    transition: var(--ease-base);
+  }
+  .btn-switch-movil:active {
+    transform: scale(0.96);
+  }
+
+  /* Pantalla de Mapa en Celular: alternancia fluida */
+  .pantalla-mapa {
+    height: calc(100vh - 100px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .visor {
+    display: block;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Modo Lista (por defecto en celular) */
+  .visor .panel {
+    display: block;
+    height: 100%;
+    overflow-y: auto;
+    padding: 14px 14px 80px; /* espacio para el botón flotante */
+    border: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .visor .mapa-caja {
+    display: none;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+  }
+
+  /* Modo Mapa activado */
+  .visor.movil-modo-mapa .panel {
+    display: none;
+  }
+
+  .visor.movil-modo-mapa .mapa-caja {
+    display: block;
+  }
+
+  .resumen {
+    left: 10px;
+    right: 10px;
+    bottom: 74px; /* sobre el botón flotante */
+    width: auto;
+    max-height: 55%;
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Filtros en celular */
+  .fila-filtros {
+    gap: 8px;
+  }
+  .casilla {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    padding: 9px 10px;
+    font-size: 11.5px;
+    text-align: center;
+  }
+  .chips {
+    gap: 6px;
+  }
+  .chip {
+    padding: 7px 11px;
+    font-size: 11.5px;
+  }
 
   /* Ficha mobile */
-  .ficha { padding: var(--sp-5) var(--sp-4) var(--sp-10); }
-  .ficha-cuerpo { grid-template-columns: 1fr; gap: var(--sp-6); }
-  .datos div { grid-template-columns: 100px 1fr; }
+  .ficha {
+    padding: var(--sp-4) var(--sp-4) var(--sp-10);
+  }
+  .ficha-cuerpo {
+    grid-template-columns: 1fr;
+    gap: var(--sp-5);
+  }
+  .datos div {
+    grid-template-columns: 100px 1fr;
+    gap: 8px;
+    font-size: 13.5px;
+  }
+  .acciones-ficha {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .acciones-ficha .boton,
+  .acciones-ficha button {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 14px;
+  }
 
-  /* Bandeja mobile */
-  .bandeja { padding: var(--sp-6) var(--sp-4) var(--sp-10); }
-  .bandeja h1 { font-size: var(--text-3xl); }
-  .fila { grid-template-columns: 56px minmax(0, 1fr); }
-  .fila .form-alerta { grid-column: 2; justify-content: flex-start; }
-  .fila:not(:has(.fecha)) { grid-template-columns: minmax(0, 1fr); }
+  /* Bandeja (Alertas, Mi Ruta, Perfil) mobile */
+  .bandeja {
+    padding: var(--sp-5) var(--sp-4) var(--sp-12);
+  }
+  .bandeja h1 {
+    font-size: var(--text-2xl);
+  }
+  .fila {
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .fila .form-alerta {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+    margin-top: 6px;
+  }
+  .fila .form-alerta select,
+  .fila .form-alerta button {
+    flex: 1;
+  }
+  .fila:not(:has(.fecha)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-  /* Parada mobile */
-  .parada { grid-template-columns: 36px minmax(0, 1fr); }
+  /* Paradas Mi Ruta */
+  .parada {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .parada form {
+    grid-column: 1 / -1;
+    text-align: right;
+  }
 
-  .item-dist { font-size: var(--text-md); }
-  .acciones-ficha { gap: var(--sp-2); }
-  .acciones-ficha .boton { font-size: var(--text-xs); padding: 8px var(--sp-3); }
+  /* Auth mobile */
+  .auth-contenedor {
+    padding: var(--sp-4) var(--sp-3);
+  }
+  .auth-card {
+    padding: 22px 16px;
+    border-radius: var(--r-lg);
+  }
+  .input-auth {
+    font-size: 16px; /* evita zoom automático en iPhone */
+    padding: 12px 14px;
+  }
 }
 
 @media (max-width: 480px) {
-  .barra nav { gap: 2px; }
-  .barra nav a { padding: var(--sp-1) var(--sp-2); }
+  .casilla {
+    flex: 1 1 100%;
+  }
+  .barra nav a {
+    font-size: 11px;
+    padding: 6px 4px;
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -1309,21 +1546,61 @@ dialog .acciones { margin-top: var(--sp-5); }
   margin-left: 2px;
 }
 
-.requisitos-box {
+/* Checklist interactivo de contraseña en tiempo real */
+.checklist-pass {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
-.requisito-item {
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--clr-surface-alt);
+.check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--clr-ink-mid);
-  padding: 3px 8px;
-  border-radius: var(--r-sm);
+  background: var(--clr-surface-alt);
   border: 1px solid var(--clr-border);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  transition: var(--ease-base);
+}
+
+.check-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+  background: #E2DDD6;
+  color: #718096;
+  line-height: 1;
+  transition: var(--ease-fast);
+}
+
+.check-item.invalido {
+  color: var(--clr-red);
+  background: var(--clr-red-light);
+  border-color: rgba(122, 46, 87, 0.3);
+}
+.check-item.invalido .check-ico {
+  background: var(--clr-red);
+  color: #fff;
+}
+
+.check-item.valido {
+  color: var(--clr-green);
+  background: var(--clr-green-light);
+  border-color: rgba(45, 106, 79, 0.35);
+  font-weight: 600;
+}
+.check-item.valido .check-ico {
+  background: var(--clr-green);
+  color: #fff;
 }
 
 .input-auth {

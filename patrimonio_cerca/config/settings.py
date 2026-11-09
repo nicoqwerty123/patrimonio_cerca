@@ -3,6 +3,19 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Carga de variables de entorno desde archivo .env local si existe
+def _cargar_env():
+    for ruta in [BASE_DIR / ".env", BASE_DIR.parent / ".env"]:
+        if ruta.exists():
+            with open(ruta, "r", encoding="utf-8") as f:
+                for linea in f:
+                    linea = linea.strip()
+                    if linea and not linea.startswith("#") and "=" in linea:
+                        k, v = linea.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
+_cargar_env()
+
 # En producción, definir la variable de entorno DJANGO_SECRET_KEY
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-cambiar-en-produccion")
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")

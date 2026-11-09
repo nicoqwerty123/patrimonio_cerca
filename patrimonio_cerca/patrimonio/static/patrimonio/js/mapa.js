@@ -117,6 +117,9 @@
   }
 
   function seleccionar(r, centrar) {
+    if (window.innerWidth <= 860 && typeof mostrarVistaMapa === "function") {
+      mostrarVistaMapa(true);
+    }
     if (centrar && marcadores.has(r.id)) {
       capa.zoomToShowLayer(marcadores.get(r.id), () => mapa.panTo([r.lat, r.lng]));
     }
@@ -220,6 +223,32 @@
   const cerrarDialogo = () => { sessionStorage.setItem("decidido", "1"); dlg.close(); };
   $("#permitir").addEventListener("click", () => { cerrarDialogo(); usarUbicacion(); });
   $("#omitir").addEventListener("click", () => { cerrarDialogo(); aviso("Mostrando Santiago centro. Busca una comuna o usa tu ubicación cuando quieras."); });
+
+  // ---- alternador móvil mapa / lista ----
+  const btnToggle = document.getElementById("btn-toggle-vista");
+  const visor = document.getElementById("contenido-principal");
+  const icoVista = document.getElementById("ico-vista");
+  const txtVista = document.getElementById("txt-vista");
+  let viendoMapa = false;
+
+  function mostrarVistaMapa(activar) {
+    viendoMapa = activar;
+    if (!visor) return;
+    if (viendoMapa) {
+      visor.classList.add("movil-modo-mapa");
+      if (icoVista) icoVista.textContent = "📋";
+      if (txtVista) txtVista.textContent = "Ver Lista y Filtros";
+      setTimeout(() => { mapa.invalidateSize(); }, 200);
+    } else {
+      visor.classList.remove("movil-modo-mapa");
+      if (icoVista) icoVista.textContent = "🗺️";
+      if (txtVista) txtVista.textContent = "Ver Mapa";
+    }
+  }
+
+  if (btnToggle) {
+    btnToggle.addEventListener("click", () => mostrarVistaMapa(!viendoMapa));
+  }
 
   cargar();
   if (!sessionStorage.getItem("decidido") && typeof dlg.showModal === "function") dlg.showModal();

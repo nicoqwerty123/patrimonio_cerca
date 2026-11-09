@@ -7,6 +7,14 @@
 {% endblock %}
 
 {% block contenido %}
+<!-- Barra flotante móvil para alternar entre Mapa y Lista -->
+<div class="switch-movil-wrap" id="switch-movil-wrap">
+  <button type="button" class="btn-switch-movil" id="btn-toggle-vista" aria-label="Alternar entre mapa y lista de resultados">
+    <span id="ico-vista" aria-hidden="true">🗺️</span>
+    <span id="txt-vista">Ver Mapa</span>
+  </button>
+</div>
+
 <div class="visor" id="contenido-principal">
   <!-- Panel lateral de búsqueda y resultados -->
   <section class="panel" aria-label="Búsqueda y resultados">

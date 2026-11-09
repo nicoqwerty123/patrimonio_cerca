@@ -26,7 +26,7 @@
     </div>
     {% endif %}
 
-    <form method="post" action="{% url 'registro' %}" class="auth-form" novalidate>
+    <form method="post" action="{% url 'registro' %}" class="auth-form" novalidate id="form-registro">
       {% csrf_token %}
 
       <!-- Nombre de usuario -->
@@ -49,27 +49,42 @@
         <small class="auth-ayuda">Te enviaremos un correo de bienvenida instantáneo a esta dirección.</small>
       </div>
 
-      <!-- Contraseña con requisitos estrictos -->
+      <!-- Contraseña con requisitos en vivo -->
       <div class="auth-campo">
         <label for="{{ form.password1.id_for_label }}">
           Contraseña <span class="obligatorio" aria-hidden="true">*</span>
         </label>
         {{ form.password1 }}
-        
-        <!-- Requisitos visuales -->
-        <div class="requisitos-box" aria-label="Requisitos obligatorios de contraseña">
-          <span class="requisito-item">✓ Mínimo 8 caracteres</span>
-          <span class="requisito-item">✓ 1 mayúscula (A-Z)</span>
-          <span class="requisito-item">✓ 1 carácter especial (!@#$%...)</span>
+
+        <!-- Checklist interactivo en tiempo real -->
+        <div class="checklist-pass" id="checklist-pass" aria-live="polite">
+          <div class="check-item" id="chk-longitud">
+            <span class="check-ico" aria-hidden="true">✕</span>
+            <span class="check-txt">Mínimo 8 caracteres</span>
+          </div>
+          <div class="check-item" id="chk-mayuscula">
+            <span class="check-ico" aria-hidden="true">✕</span>
+            <span class="check-txt">Al menos 1 mayúscula (A-Z)</span>
+          </div>
+          <div class="check-item" id="chk-especial">
+            <span class="check-ico" aria-hidden="true">✕</span>
+            <span class="check-txt">Al menos 1 carácter especial (!@#$%...)</span>
+          </div>
         </div>
       </div>
 
-      <!-- Confirmar contraseña -->
+      <!-- Confirmar contraseña con indicador -->
       <div class="auth-campo">
         <label for="{{ form.password2.id_for_label }}">
           Confirma tu contraseña <span class="obligatorio" aria-hidden="true">*</span>
         </label>
         {{ form.password2 }}
+        <div class="checklist-pass" id="checklist-match" style="display: none;">
+          <div class="check-item" id="chk-match">
+            <span class="check-ico" aria-hidden="true">✕</span>
+            <span class="check-txt">Las contraseñas coinciden</span>
+          </div>
+        </div>
       </div>
 
       <button type="submit" class="boton boton-full" style="margin-top: 0.75rem;">
@@ -82,4 +97,56 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block js %}
+<script>
+  (function() {
+    const p1 = document.getElementById("id_password1");
+    const p2 = document.getElementById("id_password2");
+    const chkLong = document.getElementById("chk-longitud");
+    const chkMayus = document.getElementById("chk-mayuscula");
+    const chkEsp = document.getElementById("chk-especial");
+    const chkMatchBox = document.getElementById("checklist-match");
+    const chkMatch = document.getElementById("chk-match");
+
+    function setEstado(el, valido) {
+      if (!el) return;
+      const ico = el.querySelector(".check-ico");
+      if (valido) {
+        el.classList.add("valido");
+        el.classList.remove("invalido");
+        if (ico) ico.textContent = "✓";
+      } else {
+        el.classList.add("invalido");
+        el.classList.remove("valido");
+        if (ico) ico.textContent = "✕";
+      }
+    }
+
+    if (p1) {
+      p1.addEventListener("input", function() {
+        const val = p1.value;
+        setEstado(chkLong, val.length >= 8);
+        setEstado(chkMayus, /[A-Z]/.test(val));
+        setEstado(chkEsp, /[^a-zA-Z0-9\s]/.test(val));
+        verificarMatch();
+      });
+    }
+
+    function verificarMatch() {
+      if (!p2 || !p1) return;
+      if (p2.value.length > 0) {
+        chkMatchBox.style.display = "flex";
+        setEstado(chkMatch, p1.value === p2.value && p1.value.length > 0);
+      } else {
+        chkMatchBox.style.display = "none";
+      }
+    }
+
+    if (p2) {
+      p2.addEventListener("input", verificarMatch);
+    }
+  })();
+</script>
 {% endblock %}
