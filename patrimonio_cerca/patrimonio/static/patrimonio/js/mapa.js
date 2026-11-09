@@ -51,8 +51,54 @@
     if (b) { b.textContent = total; b.hidden = !total; }
   }
 
+  // ---- Shadow Loading / Skeleton ----
+  function mostrarSkeleton() {
+    const ol = $("#lista");
+    if (!ol) return;
+    $("#vacio").hidden = true;
+    ol.innerHTML = `
+      <li class="skeleton-card" aria-hidden="true">
+        <div class="fila">
+          <span class="skeleton-box skeleton-icon"></span>
+          <div style="flex:1;">
+            <span class="skeleton-box skeleton-title"></span>
+            <span class="skeleton-box skeleton-meta"></span>
+          </div>
+          <span class="skeleton-box skeleton-dist"></span>
+        </div>
+        <span class="skeleton-box skeleton-desc"></span>
+        <span class="skeleton-box skeleton-desc" style="width:65%;"></span>
+      </li>
+      <li class="skeleton-card" aria-hidden="true">
+        <div class="fila">
+          <span class="skeleton-box skeleton-icon"></span>
+          <div style="flex:1;">
+            <span class="skeleton-box skeleton-title" style="width:84%;"></span>
+            <span class="skeleton-box skeleton-meta" style="width:40%;"></span>
+          </div>
+          <span class="skeleton-box skeleton-dist"></span>
+        </div>
+        <span class="skeleton-box skeleton-desc"></span>
+        <span class="skeleton-box skeleton-desc" style="width:52%;"></span>
+      </li>
+      <li class="skeleton-card" aria-hidden="true">
+        <div class="fila">
+          <span class="skeleton-box skeleton-icon"></span>
+          <div style="flex:1;">
+            <span class="skeleton-box skeleton-title" style="width:62%;"></span>
+            <span class="skeleton-box skeleton-meta" style="width:55%;"></span>
+          </div>
+          <span class="skeleton-box skeleton-dist"></span>
+        </div>
+        <span class="skeleton-box skeleton-desc"></span>
+        <span class="skeleton-box skeleton-desc" style="width:70%;"></span>
+      </li>
+    `;
+  }
+
   // ---- datos ----
   async function cargar() {
+    mostrarSkeleton();
     const p = new URLSearchParams({
       lat: centro.lat, lng: centro.lng, radio,
       gratis: $("#f-gratis").checked ? 1 : 0,

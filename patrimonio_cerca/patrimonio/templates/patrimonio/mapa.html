@@ -90,8 +90,45 @@
       <span class="pin actividad chico" style="--c:#718096"></span> Actividad
     </p>
 
-    <!-- Lista de resultados -->
-    <ol class="lista" id="lista" aria-label="Resultados de búsqueda"></ol>
+    <!-- Lista de resultados con soporte de Shadow Loading / Skeleton -->
+    <ol class="lista" id="lista" aria-label="Resultados de búsqueda">
+      <li class="skeleton-card" aria-hidden="true">
+        <div class="fila">
+          <span class="skeleton-box skeleton-icon"></span>
+          <div style="flex:1;">
+            <span class="skeleton-box skeleton-title"></span>
+            <span class="skeleton-box skeleton-meta"></span>
+          </div>
+          <span class="skeleton-box skeleton-dist"></span>
+        </div>
+        <span class="skeleton-box skeleton-desc"></span>
+        <span class="skeleton-box skeleton-desc" style="width:65%;"></span>
+      </li>
+      <li class="skeleton-card" aria-hidden="true">
+        <div class="fila">
+          <span class="skeleton-box skeleton-icon"></span>
+          <div style="flex:1;">
+            <span class="skeleton-box skeleton-title" style="width:84%;"></span>
+            <span class="skeleton-box skeleton-meta" style="width:40%;"></span>
+          </div>
+          <span class="skeleton-box skeleton-dist"></span>
+        </div>
+        <span class="skeleton-box skeleton-desc"></span>
+        <span class="skeleton-box skeleton-desc" style="width:52%;"></span>
+      </li>
+      <li class="skeleton-card" aria-hidden="true">
+        <div class="fila">
+          <span class="skeleton-box skeleton-icon"></span>
+          <div style="flex:1;">
+            <span class="skeleton-box skeleton-title" style="width:62%;"></span>
+            <span class="skeleton-box skeleton-meta" style="width:55%;"></span>
+          </div>
+          <span class="skeleton-box skeleton-dist"></span>
+        </div>
+        <span class="skeleton-box skeleton-desc"></span>
+        <span class="skeleton-box skeleton-desc" style="width:70%;"></span>
+      </li>
+    </ol>
 
     <!-- Estado vacío -->
     <div class="vacio" id="vacio" hidden role="status">

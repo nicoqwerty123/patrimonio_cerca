@@ -1804,3 +1804,86 @@ dialog .acciones { margin-top: var(--sp-5); }
     background: #eee !important;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   19. SHADOW LOADING / SKELETON SCREEN (UI/UX)
+   ══════════════════════════════════════════════════ */
+@keyframes shadow-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-box {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    rgba(226, 221, 214, 0.7) 25%,
+    rgba(247, 245, 240, 0.95) 50%,
+    rgba(226, 221, 214, 0.7) 75%
+  );
+  background-size: 200% 100%;
+  animation: shadow-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--r-sm);
+}
+
+.skeleton-card {
+  pointer-events: none;
+  border: 1px solid var(--clr-border) !important;
+  background: var(--clr-surface) !important;
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-3);
+  box-shadow: 0 1px 3px rgba(28, 35, 41, 0.04);
+  opacity: 0.88;
+}
+
+.skeleton-card .fila {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+
+.skeleton-card .skeleton-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-card .skeleton-title {
+  height: 18px;
+  width: 72%;
+  margin-bottom: 6px;
+}
+
+.skeleton-card .skeleton-meta {
+  height: 12px;
+  width: 48%;
+}
+
+.skeleton-card .skeleton-dist {
+  height: 14px;
+  width: 44px;
+  border-radius: var(--r-sm);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.skeleton-card .skeleton-desc {
+  height: 13px;
+  width: 95%;
+  margin-top: 6px;
+}
+
+.skeleton-card .skeleton-btn {
+  height: 28px;
+  width: 86px;
+  border-radius: var(--r-sm);
+  margin-top: var(--sp-2);
+}
+
