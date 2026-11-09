@@ -316,11 +316,12 @@ def registro_view(request):
             request.session["uid"] = new_uid
             _migrar_sesion(anon_uid, new_uid)
 
-            # Envío de correo de bienvenida si especificó email
+            # Envío de correo de bienvenida instantáneo
             if user.email:
-                enviar_correo_bienvenida(user)
+                base_url = request.build_absolute_uri("/")[:-1]
+                enviar_correo_bienvenida(user, base_url=base_url)
 
-            messages.success(request, f"¡Bienvenido/a, {user.username}! Tu cuenta ha sido creada exitosamente.")
+            messages.success(request, f"¡Bienvenido/a, {user.username}! Tu cuenta ha sido creada exitosamente. Te enviamos un correo a {user.email}.")
             return redirect("mapa")
     else:
         form = FormularioRegistro()

@@ -1,17 +1,16 @@
 import logging
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 
 def _enviar_correo(asunto, mensaje_plano, mensaje_html, destinatario):
-    """Envía un correo electrónico multipart (texto + HTML) de forma segura."""
+    """Envia un correo electronico multipart (texto + HTML) de forma segura."""
     if not destinatario:
         return False
     try:
-        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "Patrimonio Cerca <contacto@patrimoniocerca.cl>")
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "Patrimonio Cerca <notificaciones@patrimoniocerca.cl>")
         email = EmailMultiAlternatives(
             subject=asunto,
             body=mensaje_plano,
@@ -26,164 +25,146 @@ def _enviar_correo(asunto, mensaje_plano, mensaje_html, destinatario):
         return False
 
 
-def enviar_correo_bienvenida(user):
-    """Envía un correo de bienvenida tras el registro."""
+def enviar_correo_bienvenida(user, base_url="http://127.0.0.1:8000"):
+    """Envia un correo de bienvenida minimalista y directo tras registrarse."""
     if not user.email:
         return False
 
-    asunto = "¡Bienvenido/a a Patrimonio Cerca! 🏛️"
     nombre = user.first_name or user.username
+    asunto = f"Bienvenido/a a Patrimonio Cerca, {nombre}"
 
-    plano = f"""
-Hola {nombre},
+    plano = f"""Hola {nombre},
 
-¡Gracias por unirte a Patrimonio Cerca!
+Tu cuenta en Patrimonio Cerca ya esta activa.
 
-Ahora tienes acceso a todas las herramientas para descubrir y disfrutar el patrimonio cultural de Chile:
-- Explora el mapa interactivo con más de 30 sitios y actividades verificadas.
-- Guarda tus lugares favoritos y genera tu recorrido optimizado en Google Maps.
-- Activa alertas personalizadas para que no te pierdas eventos, talleres ni aperturas especiales.
+A partir de ahora puedes:
+- Guardar tus monumentos y museos favoritos en 'Mi ruta'.
+- Recibir avisos y alertas antes de tus actividades culturales.
 
-Puedes acceder a tu cuenta en cualquier momento desde:
-http://127.0.0.1:8000/
+Empieza a explorar aqui:
+{base_url}/
 
-¡Que disfrutes tu viaje cultural!
-El equipo de Patrimonio Cerca
-    """.strip()
+El equipo de Patrimonio Cerca.
+""".strip()
 
-    html = f"""
-<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F7F5F0; margin: 0; padding: 24px 12px; color: #1C2329; }}
-    .card {{ max-width: 540px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2DDD6; overflow: hidden; box-shadow: 0 4px 12px rgba(28,35,41,0.06); }}
-    .header {{ background: #1A3D6B; padding: 28px 24px; text-align: center; color: #FFFFFF; }}
-    .logo {{ font-size: 28px; line-height: 1; margin-bottom: 8px; color: #C8902A; }}
-    .header h1 {{ margin: 0; font-size: 22px; font-weight: 700; color: #FFFFFF; }}
-    .body {{ padding: 28px 24px; font-size: 15px; line-height: 1.6; color: #333333; }}
-    .feature-box {{ background: #F4F7FB; border-left: 3px solid #1A3D6B; padding: 14px 16px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; }}
-    .feature-box ul {{ margin: 6px 0 0 16px; padding: 0; }}
-    .feature-box li {{ margin-bottom: 6px; }}
-    .cta-btn {{ display: inline-block; background: #1A3D6B; color: #FFFFFF !important; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; margin-top: 12px; }}
-    .footer {{ text-align: center; font-size: 12px; color: #888888; padding: 20px 24px; border-top: 1px solid #E2DDD6; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F7F5F0; margin: 0; padding: 20px 10px; color: #1C2329; }}
+    .caja {{ max-width: 440px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2DDD6; border-radius: 12px; padding: 26px 22px; box-shadow: 0 2px 8px rgba(28,35,41,0.05); }}
+    .logo {{ font-size: 24px; color: #C8902A; margin-bottom: 6px; }}
+    h1 {{ font-size: 19px; color: #1A3D6B; margin: 0 0 10px 0; font-weight: 700; }}
+    p {{ font-size: 14px; line-height: 1.55; color: #4A5568; margin: 0 0 12px 0; }}
+    .puntos {{ background: #F4F7FB; border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 13px; color: #2D3748; }}
+    .puntos li {{ margin-bottom: 4px; }}
+    .btn {{ display: inline-block; background: #1A3D6B; color: #FFFFFF !important; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 6px; }}
+    .footer {{ font-size: 11px; color: #A0AEC0; margin-top: 20px; padding-top: 12px; border-top: 1px solid #E2DDD6; text-align: center; }}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">
-      <div class="logo">⬡</div>
-      <h1>¡Bienvenido a Patrimonio Cerca!</h1>
+  <div class="caja">
+    <div class="logo">&#x2B21;</div>
+    <h1>Hola {nombre}, tu cuenta esta lista</h1>
+    <p>Te damos la bienvenida a <strong>Patrimonio Cerca</strong>. Ya puedes comenzar a descubrir y guardar sitios patrimoniales cerca de ti.</p>
+    
+    <div class="puntos">
+      <ul style="margin: 0; padding-left: 18px;">
+        <li>Planifica y optimiza tus recorridos en <em>Mi ruta</em>.</li>
+        <li>Programa avisos por correo para tus actividades favoritas.</li>
+      </ul>
     </div>
-    <div class="body">
-      <p>Hola <strong>{nombre}</strong>,</p>
-      <p>Nos alegra que formes parte de nuestra comunidad. Tu cuenta ha sido creada exitosamente.</p>
-      
-      <div class="feature-box">
-        <strong>Con tu cuenta ahora puedes:</strong>
-        <ul>
-          <li><strong>Guardar tu ruta:</strong> Planifica recorridos a pie por los monumentos y sitios más valiosos.</li>
-          <li><strong>Alertas tempranas:</strong> Te avisaremos con anticipación antes de tus actividades favoritas.</li>
-          <li><strong>Sincronización:</strong> Tus preferencias se guardan de forma permanente.</li>
-        </ul>
-      </div>
 
-      <div style="text-align: center; margin: 24px 0 10px;">
-        <a href="http://127.0.0.1:8000/" class="cta-btn">Explorar el mapa ahora</a>
-      </div>
+    <div style="text-align: center; margin-top: 18px;">
+      <a href="{base_url}/" class="btn">Explorar el mapa ahora</a>
     </div>
+
     <div class="footer">
-      Patrimonio Cerca · Cultura y comunidad en Chile
+      Patrimonio Cerca &middot; Cultura y comunidad
     </div>
   </div>
 </body>
-</html>
-    """.strip()
+</html>""".strip()
 
     return _enviar_correo(asunto, plano, html, user.email)
 
 
-def enviar_correo_confirmacion_alerta(email, recurso, dias_antes, fecha_aviso):
-    """Envía un correo confirmando la suscripción a una alerta."""
+def enviar_correo_confirmacion_alerta(email, recurso, dias_antes, fecha_aviso, base_url="http://127.0.0.1:8000"):
+    """Envia un correo confirmando la suscripcion a una alerta."""
     if not email:
         return False
 
-    asunto = f"Alerta confirmada: {recurso.titulo} 📅"
-    texto_dias = "el mismo día del evento" if dias_antes == 0 else f"{dias_antes} día(s) antes"
+    asunto = f"Alerta confirmada: {recurso.titulo}"
+    texto_dias = "el mismo dia del evento" if dias_antes == 0 else f"{dias_antes} dia(s) antes"
 
-    plano = f"""
-Hola,
+    plano = f"""Hola,
 
 Has programado una alerta cultural para la siguiente actividad:
 
 Actividad: {recurso.titulo}
-Categoría: {recurso.categoria.nombre}
-Ubicación: {recurso.direccion}, {recurso.comuna}
+Categoria: {recurso.categoria.nombre}
+Ubicacion: {recurso.direccion}, {recurso.comuna}
 Fechas: {recurso.fechas_texto}
 Horario: {recurso.horario or 'Consultar en sitio web'}
 Costo: {recurso.costo_texto}
 
 Te enviaremos un recordatorio {texto_dias} (el {fecha_aviso.strftime('%d/%m/%Y')}).
 
-Ver detalles y mapa de cómo llegar:
-http://127.0.0.1:8000/lugar/{recurso.pk}/
+Ver detalles y mapa:
+{base_url}/lugar/{recurso.pk}/
 
-¡No te lo pierdas!
 Patrimonio Cerca
-    """.strip()
+""".strip()
 
-    html = f"""
-<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F7F5F0; margin: 0; padding: 24px 12px; color: #1C2329; }}
-    .card {{ max-width: 540px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2DDD6; overflow: hidden; box-shadow: 0 4px 12px rgba(28,35,41,0.06); }}
-    .header {{ background: #1A3D6B; padding: 24px; text-align: center; color: #FFFFFF; }}
-    .logo {{ font-size: 24px; color: #C8902A; margin-bottom: 6px; }}
-    .header h1 {{ margin: 0; font-size: 20px; font-weight: 700; color: #FFFFFF; }}
-    .body {{ padding: 24px; font-size: 15px; line-height: 1.6; color: #333333; }}
-    .highlight {{ background: #FEF3C7; border: 1px solid #FDE68A; color: #92600A; padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 18px; font-weight: 500; }}
-    .info-table {{ width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }}
-    .info-table td {{ padding: 8px 0; border-bottom: 1px solid #E2DDD6; }}
-    .info-table td.label {{ color: #718096; width: 110px; font-weight: 600; text-transform: uppercase; font-size: 12px; }}
-    .cta-btn {{ display: inline-block; background: #1A3D6B; color: #FFFFFF !important; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; margin-top: 10px; }}
-    .footer {{ text-align: center; font-size: 12px; color: #888888; padding: 18px; border-top: 1px solid #E2DDD6; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F7F5F0; margin: 0; padding: 20px 10px; color: #1C2329; }}
+    .card {{ max-width: 480px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2DDD6; padding: 24px; box-shadow: 0 2px 8px rgba(28,35,41,0.06); }}
+    .header {{ text-align: center; margin-bottom: 16px; }}
+    .logo {{ font-size: 24px; color: #C8902A; }}
+    h1 {{ margin: 6px 0 0; font-size: 19px; font-weight: 700; color: #1A3D6B; }}
+    .highlight {{ background: #FEF3C7; border: 1px solid #FDE68A; color: #92600A; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin: 14px 0; font-weight: 500; }}
+    .info-table {{ width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }}
+    .info-table td {{ padding: 6px 0; border-bottom: 1px solid #E2DDD6; }}
+    .info-table td.label {{ color: #718096; width: 100px; font-weight: 600; text-transform: uppercase; font-size: 11px; }}
+    .cta-btn {{ display: inline-block; background: #1A3D6B; color: #FFFFFF !important; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 10px; }}
+    .footer {{ text-align: center; font-size: 11px; color: #A0AEC0; padding-top: 14px; margin-top: 14px; border-top: 1px solid #E2DDD6; }}
   </style>
 </head>
 <body>
   <div class="card">
     <div class="header">
-      <div class="logo">⬡</div>
+      <div class="logo">&#x2B21;</div>
       <h1>Recordatorio Programado</h1>
     </div>
-    <div class="body">
-      <div class="highlight">
-        🔔 Te avisaremos {texto_dias} (el {fecha_aviso.strftime('%d/%m/%Y')}).
-      </div>
-
-      <h2 style="font-size: 18px; margin: 0 0 12px; color: #1A3D6B;">{recurso.titulo}</h2>
-
-      <table class="info-table">
-        <tr><td class="label">Categoría</td><td>{recurso.categoria.nombre}</td></tr>
-        <tr><td class="label">Fechas</td><td>{recurso.fechas_texto}</td></tr>
-        <tr><td class="label">Dirección</td><td>{recurso.direccion}, {recurso.comuna}</td></tr>
-        <tr><td class="label">Horario</td><td>{recurso.horario or 'Sin información'}</td></tr>
-        <tr><td class="label">Costo</td><td>{recurso.costo_texto}</td></tr>
-      </table>
-
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="http://127.0.0.1:8000/lugar/{recurso.pk}/" class="cta-btn">Ver ficha y ubicación</a>
-      </div>
+    
+    <div class="highlight">
+      Te avisaremos {texto_dias} (el {fecha_aviso.strftime('%d/%m/%Y')}).
     </div>
+
+    <h2 style="font-size: 16px; margin: 0 0 10px; color: #1A3D6B;">{recurso.titulo}</h2>
+
+    <table class="info-table">
+      <tr><td class="label">Categoria</td><td>{recurso.categoria.nombre}</td></tr>
+      <tr><td class="label">Fechas</td><td>{recurso.fechas_texto}</td></tr>
+      <tr><td class="label">Direccion</td><td>{recurso.direccion}, {recurso.comuna}</td></tr>
+      <tr><td class="label">Horario</td><td>{recurso.horario or 'Sin informacion'}</td></tr>
+      <tr><td class="label">Costo</td><td>{recurso.costo_texto}</td></tr>
+    </table>
+
+    <div style="text-align: center; margin-top: 16px;">
+      <a href="{base_url}/lugar/{recurso.pk}/" class="cta-btn">Ver ficha y ubicacion</a>
+    </div>
+
     <div class="footer">
-      Patrimonio Cerca · Sistema de Alertas Culturales
+      Patrimonio Cerca &middot; Sistema de Alertas Culturales
     </div>
   </div>
 </body>
-</html>
-    """.strip()
+</html>""".strip()
 
     return _enviar_correo(asunto, plano, html, email)

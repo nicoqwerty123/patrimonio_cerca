@@ -12,7 +12,7 @@
 
     {% if form.errors %}
     <div class="auth-error-box" role="alert">
-      <strong>Por favor corrige los siguientes errores:</strong>
+      <strong>Por favor corrige los siguientes requisitos:</strong>
       <ul>
         {% for field in form %}
           {% for error in field.errors %}
@@ -29,29 +29,46 @@
     <form method="post" action="{% url 'registro' %}" class="auth-form" novalidate>
       {% csrf_token %}
 
+      <!-- Nombre de usuario -->
       <div class="auth-campo">
-        <label for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+        <label for="{{ form.username.id_for_label }}">
+          Nombre de usuario <span class="obligatorio" aria-hidden="true">*</span>
+        </label>
         {{ form.username }}
         {% if form.username.help_text %}
           <small class="auth-ayuda">{{ form.username.help_text }}</small>
         {% endif %}
       </div>
 
+      <!-- Correo electrónico obligatorio -->
       <div class="auth-campo">
-        <label for="{{ form.email.id_for_label }}">Correo electrónico <span class="opcional">(opcional)</span></label>
+        <label for="{{ form.email.id_for_label }}">
+          Correo electrónico <span class="obligatorio" aria-hidden="true">*</span>
+        </label>
         {{ form.email }}
+        <small class="auth-ayuda">Te enviaremos un correo de bienvenida instantáneo a esta dirección.</small>
       </div>
 
+      <!-- Contraseña con requisitos estrictos -->
       <div class="auth-campo">
-        <label for="{{ form.password1.id_for_label }}">Contraseña</label>
+        <label for="{{ form.password1.id_for_label }}">
+          Contraseña <span class="obligatorio" aria-hidden="true">*</span>
+        </label>
         {{ form.password1 }}
-        {% if form.password1.help_text %}
-          <small class="auth-ayuda">Mínimo 8 caracteres, no enteramente numérica.</small>
-        {% endif %}
+        
+        <!-- Requisitos visuales -->
+        <div class="requisitos-box" aria-label="Requisitos obligatorios de contraseña">
+          <span class="requisito-item">✓ Mínimo 8 caracteres</span>
+          <span class="requisito-item">✓ 1 mayúscula (A-Z)</span>
+          <span class="requisito-item">✓ 1 carácter especial (!@#$%...)</span>
+        </div>
       </div>
 
+      <!-- Confirmar contraseña -->
       <div class="auth-campo">
-        <label for="{{ form.password2.id_for_label }}">Confirma tu contraseña</label>
+        <label for="{{ form.password2.id_for_label }}">
+          Confirma tu contraseña <span class="obligatorio" aria-hidden="true">*</span>
+        </label>
         {{ form.password2 }}
       </div>
 

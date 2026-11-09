@@ -85,8 +85,17 @@ TILES_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 TILES_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
 # Configuración de Correo Electrónico
-# Por defecto en desarrollo los correos se imprimen formateados en la terminal/consola.
-# Para producción basta configurar las variables estándar SMTP.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "Patrimonio Cerca <notificaciones@patrimoniocerca.cl>"
+# Si se define EMAIL_HOST (producción/Render), usa SMTP real. En desarrollo imprime formateado en la terminal.
+if os.environ.get("EMAIL_HOST"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.environ.get("EMAIL_HOST")
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
+    EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"Patrimonio Cerca <{EMAIL_HOST_USER}>")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "Patrimonio Cerca <notificaciones@patrimoniocerca.cl>"
+
 
