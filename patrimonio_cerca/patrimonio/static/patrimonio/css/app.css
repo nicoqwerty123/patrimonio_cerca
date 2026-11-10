@@ -457,25 +457,64 @@ select {
   font-weight: 600;
   cursor: pointer;
   user-select: none;
-  transition: var(--ease-fast);
+  transition: var(--ease-base);
+  position: relative;
 }
 .casilla:hover {
   border-color: var(--clr-blue);
   color: var(--clr-blue);
   background: var(--clr-blue-xlight);
 }
-.casilla:has(input:checked) {
-  background: var(--clr-blue-light);
-  border-color: var(--clr-blue);
-  color: var(--clr-blue);
-  box-shadow: 0 1px 4px rgba(26,61,107,0.18);
-}
+.casilla:active { transform: scale(0.97); }
+
+/* El checkbox nativo queda oculto pero accesible (teclado y lector de
+   pantalla): el estado visual se dibuja en el circulo ::before. */
 .casilla input[type="checkbox"] {
-  accent-color: var(--clr-blue);
-  width: 16px;
-  height: 16px;
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
   margin: 0;
-  cursor: pointer;
+  pointer-events: none;
+}
+.casilla::before {
+  content: "✓";
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--clr-surface-alt);
+  border: 1.5px solid var(--clr-border-strong);
+  color: transparent;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: var(--ease-fast);
+}
+
+/* Estado marcado: pildora solida con check blanco */
+.casilla:has(input:checked) {
+  background: var(--clr-blue);
+  border-color: var(--clr-blue);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(26,61,107,.32);
+}
+.casilla:has(input:checked)::before {
+  background: #fff;
+  border-color: #fff;
+  color: var(--clr-blue);
+  transform: scale(1.05);
+}
+.casilla:has(input:checked):hover {
+  background: var(--clr-blue-mid);
+  border-color: var(--clr-blue-mid);
+  color: #fff;
+}
+.casilla:has(input:focus-visible) {
+  outline: 2px solid var(--clr-blue);
+  outline-offset: 2px;
 }
 
 /* Encabezado de lista */
@@ -530,6 +569,9 @@ select {
   cursor: pointer;
   transition: var(--ease-fast);
   box-shadow: none;
+  /* Anula el white-space:nowrap global de los botones: el texto de los
+     resultados debe poder envolver; si no, se desborda sobre la distancia. */
+  white-space: normal;
 }
 .item:hover {
   background: var(--clr-blue-xlight);
@@ -562,7 +604,10 @@ select {
   font-size: var(--text-xs);
   color: var(--clr-ink-soft);
   margin-top: 2px;
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   line-height: 1.4;
 }
 .item-dist {
