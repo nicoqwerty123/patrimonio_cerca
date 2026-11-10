@@ -1,0 +1,17 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Contraseña cambiada · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<div class="auth-contenedor" id="contenido-principal">
+  <div class="auth-card">
+    <div class="auth-header">
+      <span class="auth-icono" aria-hidden="true">✓</span>
+      <h1>¡Contraseña actualizada!</h1>
+      <p class="auth-subtitulo">Tu contraseña quedó guardada. Ya puedes entrar a tu cuenta
+        con la contraseña nueva.</p>
+    </div>
+
+    <a class="boton boton-full" href="{% url 'login' %}">Iniciar sesión</a>
+  </div>
+</div>
+{% endblock %}

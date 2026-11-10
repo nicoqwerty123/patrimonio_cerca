@@ -35,6 +35,23 @@
       Te enviaremos avisos y recordatorios de actividades culturales directamente a esta dirección.
     </p>
 
+    {% if verificado %}
+    <p class="verif-chip verif-ok" role="status">
+      <span aria-hidden="true">✓</span> Correo verificado — tus alertas llegarán sin problemas.
+    </p>
+    {% else %}
+    <p class="verif-chip verif-pendiente" role="status">
+      <span aria-hidden="true">⚠</span> Tu correo aún no está verificado: revisa el mensaje de bienvenida
+      que te enviamos y confirma tu dirección para asegurar la entrega de tus alertas.
+    </p>
+    <form method="post" action="{% url 'reenviar_verificacion' %}" class="verif-reenviar">
+      {% csrf_token %}
+      <button type="submit" class="boton secundario" style="font-size:12px; padding:8px 14px;">
+        Reenviar enlace de verificación
+      </button>
+    </form>
+    {% endif %}
+
     <form method="post" action="{% url 'perfil' %}" class="perfil-form-email">
       {% csrf_token %}
       <div class="campo-grupo">
@@ -44,6 +61,7 @@
                  placeholder="ejemplo@correo.com" required>
           <button type="submit" class="boton">Actualizar correo</button>
         </div>
+        <small class="auth-ayuda">Si cambias el correo, te enviaremos un nuevo enlace de verificación.</small>
       </div>
     </form>
   </section>

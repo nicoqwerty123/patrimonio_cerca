@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.sitemaps",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "patrimonio",
@@ -164,7 +165,10 @@ EMAIL_TIMEOUT = 5
 
 # Respaldo SMTP (solo si Brevo API no está disponible). En desarrollo sin EMAIL_HOST
 # los correos se imprimen formateados en la terminal.
-if os.environ.get("EMAIL_HOST"):
+if BREVO_API_KEY and BREVO_SENDER_EMAIL:
+    # Brevo API por HTTPS: funciona en Render (que bloquea los puertos SMTP).
+    EMAIL_BACKEND = "patrimonio.backends.BrevoAPIEmailBackend"
+elif os.environ.get("EMAIL_HOST"):
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = os.environ.get("EMAIL_HOST")
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
@@ -174,6 +178,11 @@ if os.environ.get("EMAIL_HOST"):
     DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"Patrimonio Cerca <{EMAIL_HOST_USER}>")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    DEFAULT_FROM_EMAIL = "Patrimonio Cerca <notificaciones@patrimoniocerca.cl>"
+
+# Remitente por defecto para los correos que genera Django (recuperar contraseña,
+# etc.). El backend de Brevo lo ignora y usa BREVO_SENDER_EMAIL, pero los demás
+# backends lo respetan. Siempre el correo del proyecto, nunca uno personal.
+if not os.environ.get("DEFAULT_FROM_EMAIL"):
+    DEFAULT_FROM_EMAIL = f"Patrimonio Cerca <{BREVO_SENDER_EMAIL or 'patrimonio.cerca@gmail.com'}>"
 
 

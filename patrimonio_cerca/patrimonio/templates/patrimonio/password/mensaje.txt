@@ -1,0 +1,15 @@
+Hola{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+Recibimos una solicitud para cambiar la contraseña de tu cuenta
+{{ user.username }} en Patrimonio Cerca.
+
+Abre este enlace para crear una contraseña nueva:
+
+{{ protocol }}://{{ domain }}/password/restablecer/{{ uid }}/{{ token }}/
+
+Si no fuiste tú, puedes ignorar este mensaje con tranquilidad: tu contraseña
+actual no cambia hasta que uses el enlace.
+
+El enlace expira en 3 días por seguridad.
+
+El equipo de Patrimonio Cerca.

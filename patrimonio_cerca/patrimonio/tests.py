@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.core.management import call_command
 
-from .models import Alerta, RecursoCultural
+from .models import Alerta, RecursoCultural, VerificacionEmail
 from .utils import buscar_lugar, haversine_km, normalizar, recursos_cercanos
 
 
@@ -132,3 +132,163 @@ class NuevasFuncionesTests(TestCase):
     def test_importar_csv_valida(self):
         from io import StringIO
         call_command("importar_csv", "datos/plantilla_lugares.csv", "--validar", stdout=StringIO())
+
+
+class VerificacionEmailTests(TestCase):
+    """El enlace de verificación incluido en el correo de bienvenida."""
+
+    def _enlace(self, user):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
+
+        return (
+            urlsafe_base64_encode(force_bytes(user.pk)),
+            default_token_generator.make_token(user),
+        )
+
+    def test_verificar_correo_valido(self):
+        from django.contrib.auth.models import User
+
+        user = User.objects.create_user("catalina", "catalina@example.com", "Clave#2026")
+        uidb64, token = self._enlace(user)
+        resp = self.client.get(f"/cuenta/verificar/{uidb64}/{token}/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(VerificacionEmail.objects.get(user=user).verificado)
+
+        # Un segundo uso del mismo enlace avisa que ya estaba verificado.
+        resp = self.client.get(f"/cuenta/verificar/{uidb64}/{token}/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(VerificacionEmail.objects.get(user=user).verificado)
+
+    def test_enlace_invalido_no_verifica(self):
+        from django.contrib.auth.models import User
+
+        user = User.objects.create_user("rodrigo", "rodri@example.com", "Clave#2026")
+        resp = self.client.get("/cuenta/verificar/no-existe/token-falso/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(
+            VerificacionEmail.objects.filter(user=user, verificado=True).exists()
+        )
+
+    def test_reenvio_requiere_sesion(self):
+        resp = self.client.post("/cuenta/verificar/reenviar/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, "/login/")
+
+    def test_cambiar_correo_lo_deja_pendiente(self):
+        from django.test import Client
+        from django.contrib.auth.models import User
+
+        user = User.objects.create_user("marcela", "marcela@example.com", "Clave#2026")
+        VerificacionEmail.objects.create(user=user, verificado=True)
+        client = Client()
+        client.force_login(user)
+        resp = client.post("/perfil/", {"email": "marcela.nueva@example.com"})
+        self.assertEqual(resp.status_code, 302)
+        verif = VerificacionEmail.objects.get(user=user)
+        self.assertFalse(verif.verificado)
+        user.refresh_from_db()
+        self.assertEqual(user.email, "marcela.nueva@example.com")
+
+
+class RecuperarPasswordTests(TestCase):
+    """Flujo completo: pedir el enlace, seguirlo y dejar una contraseña nueva."""
+
+    def test_flujo_completo(self):
+        from django.contrib.auth.models import User
+        from django.core import mail
+
+        user = User.objects.create_user("beatriz", "beatriz@example.com", "Vieja#2026")
+
+        # 1. Pide el enlace
+        resp = self.client.post("/password/recuperar/", {"email": "beatriz@example.com"})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, "/password/enviada/")
+        self.assertEqual(len(mail.outbox), 1)
+        cuerpo = mail.outbox[0].body
+        self.assertIn("/password/restablecer/", cuerpo)
+
+        # 2. Extrae uid y token del enlace del correo
+        enlace = [l for l in cuerpo.splitlines() if "/password/restablecer/" in l][0]
+        partes = enlace.strip("/").split("/")
+        uidb64, token = partes[-2], partes[-1]
+
+        # 3. Abre el formulario de nueva contraseña. Desde Django 4.1 el enlace
+        #    del correo redirige a una URL interna (set-password) que guarda el
+        #    token en la sesión para no filtrarlo en el Referer.
+        resp = self.client.get(f"/password/restablecer/{uidb64}/{token}/")
+        self.assertEqual(resp.status_code, 302)
+        url_formulario = resp.url
+
+        # 4. Guarda una contraseña que cumple las reglas del registro
+        resp = self.client.post(
+            url_formulario,
+            {"new_password1": "Nueva#2026", "new_password2": "Nueva#2026"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, "/password/listo/")
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("Nueva#2026"))
+
+        # La contraseña vieja ya no sirve
+        self.assertFalse(user.check_password("Vieja#2026"))
+
+    def test_password_debil_rechazada(self):
+        from django.contrib.auth.models import User
+        from django.core import mail
+
+        user = User.objects.create_user("claudio", "claudio@example.com", "Vieja#2026")
+        self.client.post("/password/recuperar/", {"email": "claudio@example.com"})
+        cuerpo = mail.outbox[0].body
+        enlace = [l for l in cuerpo.splitlines() if "/password/restablecer/" in l][0]
+        partes = enlace.strip("/").split("/")
+        uidb64, token = partes[-2], partes[-1]
+
+        # El enlace del correo redirige primero a la URL interna del formulario
+        resp = self.client.get(f"/password/restablecer/{uidb64}/{token}/")
+        self.assertEqual(resp.status_code, 302)
+        resp = self.client.post(
+            resp.url,
+            {"new_password1": "sinmayuscula1!", "new_password2": "sinmayuscula1!"},
+        )
+        self.assertEqual(resp.status_code, 200)  # vuelve a mostrar el formulario
+        self.assertContains(resp, "menos una letra mayúscula")
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("Vieja#2026"))
+
+    def test_correo_desconocido_no_revela_nada(self):
+        resp = self.client.post("/password/recuperar/", {"email": "nadie@example.com"})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, "/password/enviada/")  # misma respuesta neutral
+
+    def test_login_muestra_enlace_recuperacion(self):
+        resp = self.client.get("/login/")
+        self.assertContains(resp, "¿Olvidaste tu contraseña?")
+
+
+class SeoTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command("cargar_datos", verbosity=0)
+
+    def test_sitemap_incluye_lugares(self):
+        resp = self.client.get("/sitemap.xml")
+        self.assertEqual(resp.status_code, 200)
+        sitio = RecursoCultural.objects.first()
+        self.assertContains(resp, f"/lugar/{sitio.pk}/</loc>")
+        self.assertContains(resp, "/alertas/")
+
+    def test_robots_txt(self):
+        resp = self.client.get("/robots.txt")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "text/plain; charset=utf-8")
+        self.assertIn(b"Sitemap: http://testserver/sitemap.xml", resp.content)
+
+    def test_meta_open_graph_en_portada_y_ficha(self):
+        portada = self.client.get("/")
+        self.assertContains(portada, 'property="og:image"')
+        self.assertContains(portada, "tarjeta-compartir.png")
+        sitio = RecursoCultural.objects.filter(tipo="sitio").first()
+        ficha = self.client.get(f"/lugar/{sitio.pk}/")
+        self.assertContains(ficha, f'<meta property="og:title" content="{sitio.titulo} · Patrimonio Cerca">')

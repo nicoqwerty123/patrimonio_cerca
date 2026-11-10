@@ -1,6 +1,12 @@
 {% extends "patrimonio/base.html" %}
 {% load static %}
 {% block titulo %}{{ r.titulo }} · Patrimonio cerca{% endblock %}
+
+{% block meta_descripcion %}{{ r.descripcion|truncatechars:155 }} · {{ r.comuna }}{% endblock %}
+{% block og_tipo %}article{% endblock %}
+{% block og_titulo %}{{ r.titulo }} · Patrimonio Cerca{% endblock %}
+{% block og_descripcion %}{{ r.descripcion|truncatechars:155 }} · {{ r.comuna }}{% endblock %}
+
 {% block head %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endblock %}
 
 {% block contenido %}

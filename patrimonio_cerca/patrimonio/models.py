@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 
@@ -153,6 +154,17 @@ class Favorito(models.Model):
     class Meta:
         unique_together = ("uid", "recurso")
         ordering = ["creado"]
+
+
+class VerificacionEmail(models.Model):
+    """Estado de verificación del correo de una cuenta de usuario."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="verificacion_email")
+    verificado = models.BooleanField(default=False)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user} — {'verificado' if self.verificado else 'sin verificar'}"
 
 
 class Alerta(models.Model):

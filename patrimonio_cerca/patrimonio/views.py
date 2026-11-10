@@ -4,16 +4,29 @@ from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth import views as auth_views
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import url_has_allowed_host_and_scheme, urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
-from .emails import enviar_correo_bienvenida_async, enviar_correo_confirmacion_alerta_async
-from .forms import FormularioLogin, FormularioRegistro
-from .models import DIAS_AVISO, Alerta, Categoria, Favorito, RecursoCultural
+from .emails import (
+    enviar_correo_bienvenida_async,
+    enviar_correo_confirmacion_alerta_async,
+    enviar_correo_verificacion_async,
+)
+from .forms import (
+    FormularioLogin,
+    FormularioNuevaPassword,
+    FormularioRecuperarPassword,
+    FormularioRegistro,
+)
+from .models import DIAS_AVISO, Alerta, Categoria, Favorito, RecursoCultural, VerificacionEmail
 from .utils import COMUNAS, buscar_lugar, haversine_km, ordenar_ruta, recursos_cercanos
 
 CENTRO_DEFECTO = (-33.4489, -70.6693)  # Santiago centro
@@ -322,10 +335,12 @@ def registro_view(request):
             request.session["uid"] = new_uid
             _migrar_sesion(anon_uid, new_uid)
 
-            # Envío de correo de bienvenida instantáneo en segundo plano
+            # Envío de correo de bienvenida + verificación en segundo plano
             if user.email:
                 base_url = request.build_absolute_uri("/")[:-1]
-                enviar_correo_bienvenida_async(user, base_url=base_url)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                enviar_correo_bienvenida_async(user, base_url=base_url, uidb64=uid, token=token)
 
             messages.success(request, f"¡Bienvenido/a, {user.username}! Tu cuenta ha sido creada exitosamente. Te enviamos un correo a {user.email}.")
             return redirect("mapa")
@@ -375,15 +390,113 @@ def perfil_view(request):
 
     if request.method == "POST":
         nuevo_email = request.POST.get("email", "").strip()
+        cambio = nuevo_email and nuevo_email != request.user.email
         request.user.email = nuevo_email
         request.user.save()
-        messages.success(request, "Tu correo electrónico ha sido actualizado.")
+        if cambio:
+            # El correo nuevo queda pendiente de verificación: se envía otro enlace.
+            VerificacionEmail.objects.update_or_create(
+                user=request.user, defaults={"verificado": False}
+            )
+            enlace_uid = urlsafe_base64_encode(force_bytes(request.user.pk))
+            token = default_token_generator.make_token(request.user)
+            enviar_correo_verificacion_async(
+                request.user, enlace_uid, token,
+                base_url=request.build_absolute_uri("/")[:-1],
+            )
+            messages.success(
+                request,
+                f"Correo actualizado. Enviamos un enlace de verificación a {nuevo_email}.",
+            )
+        else:
+            messages.success(request, "Tu correo electrónico ha sido actualizado.")
         return redirect("perfil")
 
+    verificacion = VerificacionEmail.objects.filter(user=request.user).first()
     return render(request, "patrimonio/perfil.html", {
         "usuario": request.user,
         "total_favoritos": mis_favoritos.count(),
         "total_alertas": mis_alertas.count(),
         "mis_favoritos": mis_favoritos[:5],
         "mis_alertas": mis_alertas,
+        "verificado": bool(verificacion and verificacion.verificado),
     })
+
+
+# ---------- Verificación de correo ----------
+
+def verificar_email(request, uidb64, token):
+    """Confirma el correo siguiendo el enlace incluido en el correo de bienvenida."""
+    user = None
+    try:
+        user = User.objects.get(pk=force_str(urlsafe_base64_decode(uidb64)))
+    except (TypeError, ValueError, OverflowError, UnicodeDecodeError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        verif, creado = VerificacionEmail.objects.get_or_create(user=user)
+        if verif.verificado:
+            messages.info(request, f"Tu correo {user.email} ya estaba verificado: todo en orden.")
+        else:
+            verif.verificado = True
+            verif.save()
+            messages.success(request, f"¡Listo! Verificamos {user.email}; tu cuenta quedó completamente activa.")
+        return redirect("perfil" if request.user.is_authenticated else "login")
+
+    messages.error(
+        request,
+        "El enlace de verificación no es válido o ya expiró (por seguridad, duran 3 días). "
+        "Puedes pedir uno nuevo desde tu perfil.",
+    )
+    return redirect("login")
+
+
+@require_POST
+def reenviar_verificacion(request):
+    """Vuelve a enviar el enlace de verificación al correo del usuario logueado."""
+    if not request.user.is_authenticated:
+        return redirect("login")
+    user = request.user
+    if not user.email:
+        messages.error(request, "Primero guarda un correo en tu perfil para poder verificarlo.")
+        return redirect("perfil")
+
+    verif = VerificacionEmail.objects.filter(user=user).first()
+    if verif and verif.verificado:
+        messages.info(request, "Tu correo ya está verificado; no necesitas otro enlace.")
+        return redirect("perfil")
+
+    enlace_uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    enviar_correo_verificacion_async(
+        user, enlace_uid, token, base_url=request.build_absolute_uri("/")[:-1]
+    )
+    messages.success(request, f"Enviamos un nuevo enlace de verificación a {user.email}.")
+    return redirect("perfil")
+
+
+# ---------- Recuperación de contraseña ----------
+
+class RecuperarPasswordView(auth_views.PasswordResetView):
+    """Pide el correo y envía el enlace para crear una contraseña nueva."""
+    template_name = "patrimonio/password/recuperar.html"
+    form_class = FormularioRecuperarPassword
+    subject_template_name = "patrimonio/password/asunto.txt"
+    email_template_name = "patrimonio/password/mensaje.txt"
+    html_email_template_name = "patrimonio/password/mensaje.html"
+    success_url = reverse_lazy("password_enviada")
+
+
+class RecuperarEnviadaView(auth_views.PasswordResetDoneView):
+    template_name = "patrimonio/password/enviada.html"
+
+
+class RecuperarConfirmarView(auth_views.PasswordResetConfirmView):
+    """Formulario de nueva contraseña (mismas reglas que el registro)."""
+    template_name = "patrimonio/password/nueva.html"
+    form_class = FormularioNuevaPassword
+    success_url = reverse_lazy("password_lista")
+
+
+class RecuperarListaView(auth_views.PasswordResetCompleteView):
+    template_name = "patrimonio/password/listo.html"

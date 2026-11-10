@@ -20,4 +20,12 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("perfil/", views.perfil_view, name="perfil"),
+    # Verificación de correo (enlace incluido en el correo de bienvenida)
+    path("cuenta/verificar/reenviar/", views.reenviar_verificacion, name="reenviar_verificacion"),
+    path("cuenta/verificar/<uidb64>/<token>/", views.verificar_email, name="verificar_email"),
+    # Recuperación de contraseña
+    path("password/recuperar/", views.RecuperarPasswordView.as_view(), name="password_reset"),
+    path("password/enviada/", views.RecuperarEnviadaView.as_view(), name="password_enviada"),
+    path("password/restablecer/<uidb64>/<token>/", views.RecuperarConfirmarView.as_view(), name="password_confirm"),
+    path("password/listo/", views.RecuperarListaView.as_view(), name="password_lista"),
 ]

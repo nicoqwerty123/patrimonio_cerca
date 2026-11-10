@@ -1,0 +1,29 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Enlace enviado · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<div class="auth-contenedor" id="contenido-principal">
+  <div class="auth-card">
+    <div class="auth-header">
+      <span class="auth-icono" aria-hidden="true">✉️</span>
+      <h1>Revisa tu correo</h1>
+      <p class="auth-subtitulo">Si existe una cuenta con ese correo, en unos minutos
+        llegará un mensaje de <strong>patrimonio.cerca@gmail.com</strong> con el enlace
+        para crear tu nueva contraseña.</p>
+    </div>
+
+    <div class="auth-puntos">
+      <ul>
+        <li>El enlace es válido por <strong>3 días</strong> y solo se puede usar una vez.</li>
+        <li>Si no lo ves, revisa la carpeta de <em>spam</em> o <em>promociones</em>.</li>
+        <li>¿Nada llega? Vuelve a intentarlo: quizá el correo tenga otra escritura.</li>
+      </ul>
+    </div>
+
+    <a class="boton boton-full" href="{% url 'password_reset' %}">Enviar a otro correo</a>
+    <div class="auth-footer">
+      <p><a href="{% url 'login' %}" class="enlace-destacado">Volver a iniciar sesión</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

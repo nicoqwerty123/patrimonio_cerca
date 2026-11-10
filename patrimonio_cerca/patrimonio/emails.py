@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 import threading
 import urllib.request
 
@@ -14,13 +15,18 @@ logger = logging.getLogger(__name__)
 BREVO_TIMEOUT = 6
 
 
+def _en_tests():
+    """True cuando corre la suite de tests: nunca enviar correos reales."""
+    return "test" in sys.argv or "makemigrations" in sys.argv
+
+
 def _enviar_correo(asunto, mensaje_plano, mensaje_html, destinatario):
     """Envia un correo via Brevo API v3 (HTTPS) o, como respaldo, via SMTP de Django.
 
     Nunca lanza excepciones: devuelve True si se envio y False en caso contrario.
     La clave API se lee de la configuracion (variables de entorno), nunca del codigo.
     """
-    if not destinatario:
+    if not destinatario or _en_tests():
         return False
 
     brevo_api_key = (
@@ -86,13 +92,18 @@ def _en_segundo_plano(func, *args, **kwargs):
     return hilo
 
 
-def enviar_correo_bienvenida(user, base_url="http://127.0.0.1:8000"):
-    """Envia el correo de bienvenida tras registrarse."""
+def enviar_correo_bienvenida(user, base_url="http://127.0.0.1:8000", uidb64=None, token=None):
+    """Envia el correo de bienvenida tras registrarse; si se entregan uid/token
+    incluye el boton para confirmar el correo."""
     if not user.email:
         return False
 
     nombre = user.first_name or user.username
     asunto = f"Bienvenido/a a Patrimonio Cerca, {nombre}"
+
+    enlace_verificacion = (
+        f"{base_url}/cuenta/verificar/{uidb64}/{token}/" if uidb64 and token else None
+    )
 
     plano = f"""Hola {nombre},
 
@@ -104,9 +115,19 @@ A partir de ahora puedes:
 
 Empieza a explorar aqui:
 {base_url}/
+{f"Y confirma tu correo en este enlace: {enlace_verificacion}" if enlace_verificacion else ""}
 
 El equipo de Patrimonio Cerca.
 """.strip()
+
+    bloque_verificacion = ""
+    if enlace_verificacion:
+        bloque_verificacion = f"""
+    <p style="font-size: 13px; color: #718096;">Un último detalle: confirma que
+      <strong>{user.email}</strong> es tu correo para que tus alertas lleguen sin problemas.</p>
+    <div style="text-align: center; margin: 14px 0 4px;">
+      <a href="{enlace_verificacion}" class="btn" style="background: #C8902A;">Confirmar mi correo</a>
+    </div>"""
 
     html = f"""<!DOCTYPE html>
 <html lang="es">
@@ -136,7 +157,7 @@ El equipo de Patrimonio Cerca.
         <li>Programa avisos por correo para tus actividades favoritas.</li>
       </ul>
     </div>
-
+{bloque_verificacion}
     <div style="text-align: center; margin-top: 18px;">
       <a href="{base_url}/" class="btn">Explorar el mapa ahora</a>
     </div>
@@ -150,9 +171,68 @@ El equipo de Patrimonio Cerca.
     return _enviar_correo(asunto, plano, html, user.email)
 
 
-def enviar_correo_bienvenida_async(user, base_url="http://127.0.0.1:8000"):
+def enviar_correo_bienvenida_async(user, base_url="http://127.0.0.1:8000", uidb64=None, token=None):
     """Despacha el correo de bienvenida en segundo plano sin demorar la respuesta web."""
-    return _en_segundo_plano(enviar_correo_bienvenida, user, base_url=base_url)
+    return _en_segundo_plano(
+        enviar_correo_bienvenida, user, base_url=base_url, uidb64=uidb64, token=token
+    )
+
+
+def enviar_correo_verificacion(user, uidb64, token, base_url="http://127.0.0.1:8000"):
+    """Envía el enlace para confirmar el correo de la cuenta."""
+    if not user.email:
+        return False
+
+    nombre = user.first_name or user.username
+    enlace = f"{base_url}/cuenta/verificar/{uidb64}/{token}/"
+    asunto = "Confirma tu correo · Patrimonio Cerca"
+
+    plano = f"""Hola {nombre},
+
+Solo falta un paso para dejar tu cuenta de Patrimonio Cerca confirmada:
+verifica tu dirección de correo abriendo este enlace:
+
+{enlace}
+
+Si no creaste esta cuenta, puedes ignorar este mensaje.
+
+El equipo de Patrimonio Cerca.
+""".strip()
+
+    html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F7F5F0; margin: 0; padding: 20px 10px; color: #1C2329; }}
+    .caja {{ max-width: 440px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2DDD6; border-radius: 12px; padding: 26px 22px; }}
+    h1 {{ font-size: 18px; color: #1A3D6B; margin: 0 0 10px 0; }}
+    p {{ font-size: 14px; line-height: 1.55; color: #4A5568; margin: 0 0 12px 0; }}
+    .btn {{ display: inline-block; background: #1A3D6B; color: #FFFFFF !important; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 6px; }}
+    .footer {{ font-size: 11px; color: #A0AEC0; margin-top: 20px; padding-top: 12px; border-top: 1px solid #E2DDD6; text-align: center; }}
+  </style>
+</head>
+<body>
+  <div class="caja">
+    <h1>Hola {nombre}, falta un solo paso</h1>
+    <p>Confirma que <strong>{user.email}</strong> es tu correo para terminar de activar tu cuenta
+      y poder recibir tus alertas culturales sin problemas.</p>
+    <div style="text-align: center; margin-top: 16px;">
+      <a href="{enlace}" class="btn">Confirmar mi correo</a>
+    </div>
+    <p style="font-size: 12px; color: #718096;">Si no creaste esta cuenta, ignora este mensaje.</p>
+    <div class="footer">Patrimonio Cerca &middot; Plataforma cultural comunitaria</div>
+  </div>
+</body>
+</html>"""
+    return _enviar_correo(asunto, plano, html, user.email)
+
+
+def enviar_correo_verificacion_async(user, uidb64, token, base_url="http://127.0.0.1:8000"):
+    """Despacha el correo de verificacion en segundo plano."""
+    return _en_segundo_plano(
+        enviar_correo_verificacion, user, uidb64, token, base_url=base_url
+    )
 
 
 def enviar_correo_confirmacion_alerta(email, recurso, dias_antes, fecha_aviso, base_url="http://127.0.0.1:8000"):

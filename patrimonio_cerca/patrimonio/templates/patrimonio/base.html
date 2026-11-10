@@ -4,9 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf" content="{{ csrf_token }}">
-  <meta name="description" content="Descubre sitios patrimoniales y actividades culturales cerca de ti en Chile.">
+  <meta name="description" content="{% block meta_descripcion %}Descubre sitios patrimoniales y actividades culturales cerca de ti en Chile: museos, arquitectura, memoria y parques, con rutas y alertas por correo.{% endblock %}">
   <title>{% block titulo %}Patrimonio cerca{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'patrimonio/img/favicon.svg' %}">
+
+  <!-- Open Graph / Twitter: tarjeta al compartir por WhatsApp, Telegram, etc. -->
+  <meta property="og:site_name" content="Patrimonio Cerca">
+  <meta property="og:type" content="{% block og_tipo %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_titulo %}Patrimonio Cerca — el patrimonio cultural, cerca de ti{% endblock %}">
+  <meta property="og:description" content="{% block og_descripcion %}Descubre sitios patrimoniales y actividades culturales cerca de ti en Chile: museos, arquitectura, memoria y parques, con rutas y alertas por correo.{% endblock %}">
+  <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'patrimonio/img/tarjeta-compartir.png' %}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_CL">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'patrimonio/img/tarjeta-compartir.png' %}">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&display=swap" rel="stylesheet">
@@ -18,42 +32,58 @@
   <!-- Skip link para accesibilidad -->
   <a class="skip-link" href="#contenido-principal">Saltar al contenido</a>
 
-  <header class="barra" role="banner">
-    <a class="marca" href="{% url 'mapa' %}" aria-label="Patrimonio cerca — Inicio">Patrimonio cerca</a>
+  <header class="cabecera" role="banner">
+    <!-- Franja superior institucional -->
+    <div class="franja">
+      <p class="franja-frase">Chile &middot; patrimonio cultural en tu comuna</p>
+      <p class="franja-fecha">{% now "l, j F Y" %}</p>
+    </div>
 
-    <nav aria-label="Navegación principal">
-      <a href="{% url 'mapa' %}"
-         {% if request.resolver_match.url_name == 'mapa' %}aria-current="page"{% endif %}>
-        Mapa
+    <!-- Banda principal de navegación -->
+    <div class="barra">
+      <a class="marca" href="{% url 'mapa' %}" aria-label="Patrimonio cerca — Inicio">
+        <svg class="marca-sello" viewBox="0 0 40 44" aria-hidden="true" focusable="false">
+          <path d="M20 2.5 36 11.6v18.8L20 39.5 4 30.4V11.6Z"
+                fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+          <circle cx="20" cy="21" r="4.2" fill="currentColor"/>
+        </svg>
+        <span class="marca-texto">Patrimonio <em>cerca</em></span>
       </a>
-      <a href="{% url 'mi_ruta' %}"
-         {% if request.resolver_match.url_name == 'mi_ruta' %}aria-current="page"{% endif %}>
-        Mi ruta
-        <span class="insignia neutra" id="insignia-ruta"
-              {% if not n_favoritos %}hidden{% endif %}
-              aria-label="{{ n_favoritos }} lugares guardados">{{ n_favoritos }}</span>
-      </a>
-      <a href="{% url 'alertas' %}"
-         {% if request.resolver_match.url_name == 'alertas' %}aria-current="page"{% endif %}>
-        Alertas
-        <span class="insignia" id="insignia"
-              {% if not avisos_pendientes %}hidden{% endif %}
-              aria-label="{{ avisos_pendientes }} alertas pendientes">{{ avisos_pendientes }}</span>
-      </a>
-    </nav>
 
-    <!-- Perfil / Autenticación -->
-    <div class="barra-auth">
-      {% if user.is_authenticated %}
-        <a href="{% url 'perfil' %}" class="perfil-pill" title="Ver mi perfil">
-          <span class="avatar-inicial" aria-hidden="true">{{ user.username|first|upper }}</span>
-          <span class="perfil-nombre">{{ user.username }}</span>
+      <nav aria-label="Navegación principal">
+        <a href="{% url 'mapa' %}"
+           {% if request.resolver_match.url_name == 'mapa' %}aria-current="page"{% endif %}>
+          Mapa
         </a>
-        <a href="{% url 'logout' %}" class="boton-salir" title="Cerrar sesión">Salir</a>
-      {% else %}
-        <a href="{% url 'login' %}" class="auth-enlace">Entrar</a>
-        <a href="{% url 'registro' %}" class="boton boton-sm">Crear cuenta</a>
-      {% endif %}
+        <a href="{% url 'mi_ruta' %}"
+           {% if request.resolver_match.url_name == 'mi_ruta' %}aria-current="page"{% endif %}>
+          Mi ruta
+          <span class="insignia neutra" id="insignia-ruta"
+                {% if not n_favoritos %}hidden{% endif %}
+                aria-label="{{ n_favoritos }} lugares guardados">{{ n_favoritos }}</span>
+        </a>
+        <a href="{% url 'alertas' %}"
+           {% if request.resolver_match.url_name == 'alertas' %}aria-current="page"{% endif %}>
+          Alertas
+          <span class="insignia" id="insignia"
+                {% if not avisos_pendientes %}hidden{% endif %}
+                aria-label="{{ avisos_pendientes }} alertas pendientes">{{ avisos_pendientes }}</span>
+        </a>
+      </nav>
+
+      <!-- Perfil / Autenticación -->
+      <div class="barra-auth">
+        {% if user.is_authenticated %}
+          <a href="{% url 'perfil' %}" class="perfil-pill" title="Ver mi perfil">
+            <span class="avatar-inicial" aria-hidden="true">{{ user.username|first|upper }}</span>
+            <span class="perfil-nombre">{{ user.username }}</span>
+          </a>
+          <a href="{% url 'logout' %}" class="boton-salir" title="Cerrar sesión">Salir</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="auth-enlace">Entrar</a>
+          <a href="{% url 'registro' %}" class="boton boton-sm">Crear cuenta</a>
+        {% endif %}
+      </div>
     </div>
   </header>
 
