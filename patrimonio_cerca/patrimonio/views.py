@@ -76,6 +76,13 @@ def mapa(request):
     return render(request, "patrimonio/mapa.html", {
         "categorias": Categoria.objects.all(),
         "comunas": list(COMUNAS.keys()),
+        # Sugerencias del buscador: comunas + nombres de sitios, para que se
+        # descubra que tambien se puede buscar por lugar (ej: "Precolombino").
+        "sitios": list(
+            RecursoCultural.objects.filter(tipo="sitio")
+            .order_by("titulo")
+            .values_list("titulo", flat=True)
+        ),
         "radio": request.session.get("radio", RADIO_DEFECTO),
         "fav_url": reverse("fav_toggle", args=[0]),
     })

@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Carga de variables de entorno desde archivo .env local si existe
@@ -15,6 +17,35 @@ def _cargar_env():
                         os.environ.setdefault(k.strip(), v.strip().strip("'\""))
 
 _cargar_env()
+
+
+def _db_desde_url(url):
+    """Convierte una URL de PostgreSQL (Neon, Supabase, Render) a la config de Django.
+
+    Ejemplo: postgres://usuario:clave@host:5432/basedatos?sslmode=require
+    Sin DATABASE_URL definido se usa SQLite local, para desarrollar sin nada extra.
+    """
+    from urllib.parse import parse_qs, unquote, urlparse
+
+    p = urlparse(url)
+    if p.scheme not in ("postgres", "postgresql"):
+        raise ImproperlyConfigured(
+            f"DATABASE_URL solo soporta postgres/postgresql (llego: {p.scheme or 'vacio'})."
+        )
+    db = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(p.path.lstrip("/")),
+        "USER": unquote(p.username or ""),
+        "PASSWORD": unquote(p.password or ""),
+        "HOST": p.hostname or "",
+        "PORT": str(p.port or ""),
+    }
+    # Parametros de la query (?sslmode=require&connect_timeout=10) que acepta psycopg2.
+    validos = ("sslmode", "sslrootcert", "connect_timeout", "options", "application_name")
+    opts = {k: v[-1] for k, v in parse_qs(p.query).items() if k in validos}
+    if opts:
+        db["OPTIONS"] = opts
+    return db
 
 # En producción, definir la variable de entorno DJANGO_SECRET_KEY
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-cambiar-en-produccion")
@@ -64,7 +95,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -80,10 +111,18 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": (
+        _db_desde_url(os.environ["DATABASE_URL"])
+        if os.environ.get("DATABASE_URL")
+        else {
+            # SQLite local para desarrollo. En produccion (Render) definir la
+            # variable DATABASE_URL con una base PostgreSQL externa y persistente
+            # (Neon, Supabase o Render Postgres): el disco gratuito de Render es
+            # efimero y borra SQLite en cada despliegue.
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = []

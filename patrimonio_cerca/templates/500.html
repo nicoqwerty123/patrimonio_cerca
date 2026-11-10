@@ -1,0 +1,18 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Algo salió mal · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<div class="auth-contenedor">
+  <div class="auth-card" style="text-align: center;">
+    <div class="auth-icono" aria-hidden="true">⬡</div>
+    <div class="auth-header">
+      <h1>Algo salió mal</h1>
+      <p class="auth-subtitulo">Ocurrió un error inesperado y ya lo registramos en nuestros logs.
+        Intenta de nuevo en unos minutos; tu información no se perdió.</p>
+    </div>
+    <div class="acciones" style="justify-content: center;">
+      <a class="boton" href="{% url 'mapa' %}">Volver al mapa</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

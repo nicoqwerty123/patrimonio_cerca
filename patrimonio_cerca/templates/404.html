@@ -1,0 +1,19 @@
+{% extends "patrimonio/base.html" %}
+{% block titulo %}Página no encontrada · Patrimonio cerca{% endblock %}
+
+{% block contenido %}
+<div class="auth-contenedor">
+  <div class="auth-card" style="text-align: center;">
+    <div class="auth-icono" aria-hidden="true">🗺️</div>
+    <div class="auth-header">
+      <h1>No encontramos esta página</h1>
+      <p class="auth-subtitulo">El enlace que seguiste puede estar roto o la página se movió de lugar.
+        Volvamos al mapa y sigamos explorando el patrimonio cerca de ti.</p>
+    </div>
+    <div class="acciones" style="justify-content: center;">
+      <a class="boton" href="{% url 'mapa' %}">Volver al mapa</a>
+      <a class="boton secundario" href="{% url 'alertas' %}">Ver mis alertas</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

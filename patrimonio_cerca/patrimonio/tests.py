@@ -79,6 +79,27 @@ class RegistroTests(TestCase):
         self.assertIn(b"Ya existe una cuenta registrada", resp.content)
 
 
+class PaginasYBusquedaTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command("cargar_datos", verbosity=0)
+
+    def test_404_personalizada(self):
+        resp = self.client.get("/pagina-que-no-existe/")
+        self.assertContains(resp, "No encontramos esta página", status_code=404)
+
+    def test_mapa_sugiere_sitios_en_el_buscador(self):
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 200)
+        # Los sitios aparecen como sugerencias del datalist del buscador
+        self.assertContains(resp, "Museo Chileno de Arte Precolombino")
+
+    def test_buscar_por_nombre_de_sitio(self):
+        hallado = buscar_lugar("precolombino")
+        self.assertIsNotNone(hallado)
+        self.assertEqual(hallado[0], "Museo Chileno de Arte Precolombino")
+
+
 class NuevasFuncionesTests(TestCase):
     @classmethod
     def setUpTestData(cls):

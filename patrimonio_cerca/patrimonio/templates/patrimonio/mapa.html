@@ -24,9 +24,12 @@
       <label for="q" class="sr-only">Comuna o dirección</label>
       <input id="q" name="q" type="search"
              list="lista-comunas"
-             placeholder="Buscar comuna, dirección o lugar"
+             placeholder="Comuna, sitio o dirección (ej: Precolombino)"
              autocomplete="off">
-      <datalist id="lista-comunas">{% for c in comunas %}<option value="{{ c }}">{% endfor %}</datalist>
+      <datalist id="lista-comunas">
+        {% for c in comunas %}<option value="{{ c }}">{% endfor %}
+        {% for s in sitios %}<option value="{{ s }}">{% endfor %}
+      </datalist>
       <button type="submit">Buscar</button>
       <button type="button" class="secundario" id="btn-ubicacion" title="Usar mi ubicación actual">
         📍 Mi ubicación

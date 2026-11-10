@@ -1,0 +1,50 @@
+# Despacho diario de las alertas culturales por correo.
+#
+# Requiere estos "secrets" en GitHub (Settings > Secrets and variables > Actions):
+#   - DATABASE_URL      -> la misma URL de PostgreSQL que usa Render (ej: Neon/Supabase)
+#   - DJANGO_SECRET_KEY -> la clave secreta de produccion
+#   - BREVO_API_KEY     -> clave de Brevo para enviar los correos
+#   - BREVO_SENDER_EMAIL-> remitente verificado en Brevo
+#   - BASE_URL          -> URL publica de la app (ej: https://patrimonio-cerca.onrender.com)
+#
+# Tambien se puede ejecutar a mano desde la pestana "Actions" > "Run workflow".
+
+name: Alertas diarias por correo
+
+on:
+  schedule:
+    # 07:10 UTC = ~04:10 en Chile (UTC-3 verano / UTC-4 invierno): madrugada,
+    # antes de que la gente revise el correo de la manana.
+    - cron: "10 7 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+        working-directory: patrimonio_cerca
+
+      - name: Preparar base de datos
+        run: python manage.py migrate --noinput
+        working-directory: patrimonio_cerca
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+
+      - name: Enviar alertas de hoy
+        run: python manage.py enviar_alertas_email
+        working-directory: patrimonio_cerca
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
+          BASE_URL: ${{ secrets.BASE_URL }}

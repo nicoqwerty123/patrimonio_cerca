@@ -1,3 +1,5 @@
 Django>=4.2,<7.0
 gunicorn
 whitenoise
+# Driver de PostgreSQL: necesario solo en produccion (DATABASE_URL).
+psycopg2-binary
