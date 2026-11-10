@@ -98,7 +98,18 @@ TILES_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 TILES_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
 # Configuración de Correo Electrónico
-# Si se define EMAIL_HOST (producción/Render), usa SMTP real. En desarrollo imprime formateado en la terminal.
+# Envío principal: Brevo API v3 por HTTPS (puerto 443). Las plataformas PaaS como Render
+# bloquean los puertos SMTP salientes (25/465/587), por eso el envío por API es el canal
+# recomendado. Definir BREVO_API_KEY y BREVO_SENDER_EMAIL en las variables de entorno.
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL", "")
+
+# Tope de espera para el respaldo SMTP: evita que un servidor caído cuelgue
+# la respuesta web durante minutos.
+EMAIL_TIMEOUT = 5
+
+# Respaldo SMTP (solo si Brevo API no está disponible). En desarrollo sin EMAIL_HOST
+# los correos se imprimen formateados en la terminal.
 if os.environ.get("EMAIL_HOST"):
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = os.environ.get("EMAIL_HOST")

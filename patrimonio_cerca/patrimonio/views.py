@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
-from .emails import enviar_correo_bienvenida, enviar_correo_confirmacion_alerta
+from .emails import enviar_correo_bienvenida_async, enviar_correo_confirmacion_alerta_async
 from .forms import FormularioLogin, FormularioRegistro
 from .models import DIAS_AVISO, Alerta, Categoria, Favorito, RecursoCultural
 from .utils import COMUNAS, buscar_lugar, haversine_km, ordenar_ruta, recursos_cercanos
@@ -257,14 +257,13 @@ def alerta_guardar(request, pk):
         uid=_uid(request), recurso=r, defaults={"dias_antes": dias, "leida": False}
     )
 
-    # Notificación por correo electrónico si el usuario tiene email registrado
+    # Notificación por correo electrónico si el usuario tiene email registrado.
+    # Se despacha en segundo plano para no demorar la respuesta web.
     email_dest = request.user.email if request.user.is_authenticated and request.user.email else request.POST.get("email")
     if email_dest:
-        enviado = enviar_correo_confirmacion_alerta(email_dest, r, dias, alerta.fecha_aviso)
-        if enviado:
-            messages.success(request, f"Alerta guardada para «{r.titulo}». Te enviamos una confirmación a {email_dest}.")
-        else:
-            messages.success(request, f"Alerta guardada para «{r.titulo}».")
+        base_url = request.build_absolute_uri("/")[:-1]
+        enviar_correo_confirmacion_alerta_async(email_dest, r, dias, alerta.fecha_aviso, base_url=base_url)
+        messages.success(request, f"Alerta guardada para «{r.titulo}». Te enviaremos la confirmación a {email_dest}.")
     else:
         messages.success(request, f"Alerta guardada para «{r.titulo}».")
 
@@ -316,10 +315,10 @@ def registro_view(request):
             request.session["uid"] = new_uid
             _migrar_sesion(anon_uid, new_uid)
 
-            # Envío de correo de bienvenida instantáneo
+            # Envío de correo de bienvenida instantáneo en segundo plano
             if user.email:
                 base_url = request.build_absolute_uri("/")[:-1]
-                enviar_correo_bienvenida(user, base_url=base_url)
+                enviar_correo_bienvenida_async(user, base_url=base_url)
 
             messages.success(request, f"¡Bienvenido/a, {user.username}! Tu cuenta ha sido creada exitosamente. Te enviamos un correo a {user.email}.")
             return redirect("mapa")

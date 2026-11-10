@@ -1,23 +1,40 @@
 import json
 import logging
 import os
+import threading
 import urllib.request
+
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
 logger = logging.getLogger(__name__)
 
+# Tiempo máximo (segundos) de espera a la API de Brevo y al fallback SMTP.
+# Impide que un proveedor caido deje colgada la respuesta web.
+BREVO_TIMEOUT = 6
+
 
 def _enviar_correo(asunto, mensaje_plano, mensaje_html, destinatario):
-    """Envia un correo electronico via Brevo API si esta disponible o via Django EmailBackend."""
+    """Envia un correo via Brevo API v3 (HTTPS) o, como respaldo, via SMTP de Django.
+
+    Nunca lanza excepciones: devuelve True si se envio y False en caso contrario.
+    La clave API se lee de la configuracion (variables de entorno), nunca del codigo.
+    """
     if not destinatario:
         return False
 
-    brevo_api_key = getattr(settings, "BREVO_API_KEY", None) or os.environ.get("BREVO_API_KEY")
-    sender_email = getattr(settings, "BREVO_SENDER_EMAIL", None) or os.environ.get("BREVO_SENDER_EMAIL", "nmirandam@usm.cl")
+    brevo_api_key = (
+        getattr(settings, "BREVO_API_KEY", "")
+        or os.environ.get("BREVO_API_KEY", "")
+    ).strip()
+    sender_email = (
+        getattr(settings, "BREVO_SENDER_EMAIL", "")
+        or os.environ.get("BREVO_SENDER_EMAIL", "")
+    ).strip()
 
-    # Intentar envio directo via Brevo API v3
-    if brevo_api_key:
+    # 1. Envio via Brevo API v3: usa HTTPS (puerto 443), ideal para plataformas
+    #    como Render donde los puertos SMTP (25/465/587) estan bloqueados.
+    if brevo_api_key and sender_email:
         try:
             req = urllib.request.Request(
                 "https://api.brevo.com/v3/smtp/email",
@@ -33,17 +50,22 @@ def _enviar_correo(asunto, mensaje_plano, mensaje_html, destinatario):
                     "Content-Type": "application/json",
                     "accept": "application/json",
                 },
-                method="POST"
+                method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=BREVO_TIMEOUT) as resp:
                 if resp.status in (200, 201, 202):
+                    logger.info(f"Correo enviado via Brevo API a {destinatario}")
                     return True
+                logger.warning(f"Brevo API respondio HTTP {resp.status} para {destinatario}")
         except Exception as e:
-            logger.warning(f"Fallo envio via Brevo API: {e}. Intentando fallback via Django Mail...")
+            logger.warning(f"Fallo envio via Brevo API ({destinatario}): {e}")
+    elif brevo_api_key:
+        logger.warning("BREVO_SENDER_EMAIL no esta configurado; se omite Brevo API.")
 
-    # Fallback estandar de Django (SMTP o Console)
+    # 2. Respaldo SMTP de Django con timeout corto y silencioso (ver EMAIL_TIMEOUT
+    #    en settings). En desarrollo sin EMAIL_HOST solo imprime en consola.
     try:
-        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "Patrimonio Cerca <notificaciones@patrimoniocerca.cl>")
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "Patrimonio Cerca"
         email = EmailMultiAlternatives(
             subject=asunto,
             body=mensaje_plano,
@@ -51,15 +73,21 @@ def _enviar_correo(asunto, mensaje_plano, mensaje_html, destinatario):
             to=[destinatario],
         )
         email.attach_alternative(mensaje_html, "text/html")
-        email.send(fail_silently=False)
-        return True
+        return bool(email.send(fail_silently=True))
     except Exception as e:
         logger.error(f"Error al enviar correo a {destinatario}: {e}")
         return False
 
 
+def _en_segundo_plano(func, *args, **kwargs):
+    """Ejecuta una funcion en un hilo daemon para no bloquear la respuesta web."""
+    hilo = threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True)
+    hilo.start()
+    return hilo
+
+
 def enviar_correo_bienvenida(user, base_url="http://127.0.0.1:8000"):
-    """Envia un correo de bienvenida minimalista y directo tras registrarse."""
+    """Envia el correo de bienvenida tras registrarse."""
     if not user.email:
         return False
 
@@ -101,7 +129,7 @@ El equipo de Patrimonio Cerca.
     <div class="logo">&#x2B21;</div>
     <h1>Hola {nombre}, tu cuenta esta lista</h1>
     <p>Te damos la bienvenida a <strong>Patrimonio Cerca</strong>. Ya puedes comenzar a descubrir y guardar sitios patrimoniales cerca de ti.</p>
-    
+
     <div class="puntos">
       <ul style="margin: 0; padding-left: 18px;">
         <li>Planifica y optimiza tus recorridos en <em>Mi ruta</em>.</li>
@@ -114,17 +142,21 @@ El equipo de Patrimonio Cerca.
     </div>
 
     <div class="footer">
-      Patrimonio Cerca &middot; Cultura y comunidad
+      Patrimonio Cerca &middot; Plataforma cultural comunitaria
     </div>
   </div>
 </body>
-</html>""".strip()
-
+</html>"""
     return _enviar_correo(asunto, plano, html, user.email)
 
 
+def enviar_correo_bienvenida_async(user, base_url="http://127.0.0.1:8000"):
+    """Despacha el correo de bienvenida en segundo plano sin demorar la respuesta web."""
+    return _en_segundo_plano(enviar_correo_bienvenida, user, base_url=base_url)
+
+
 def enviar_correo_confirmacion_alerta(email, recurso, dias_antes, fecha_aviso, base_url="http://127.0.0.1:8000"):
-    """Envia un correo confirmando la suscripcion a una alerta."""
+    """Envia la confirmacion inmediata al programar una alerta."""
     if not email:
         return False
 
@@ -174,7 +206,7 @@ Patrimonio Cerca
       <div class="logo">&#x2B21;</div>
       <h1>Recordatorio Programado</h1>
     </div>
-    
+
     <div class="highlight">
       Te avisaremos {texto_dias} (el {fecha_aviso.strftime('%d/%m/%Y')}).
     </div>
@@ -201,3 +233,10 @@ Patrimonio Cerca
 </html>""".strip()
 
     return _enviar_correo(asunto, plano, html, email)
+
+
+def enviar_correo_confirmacion_alerta_async(email, recurso, dias_antes, fecha_aviso, base_url="http://127.0.0.1:8000"):
+    """Despacha la confirmacion de alerta en segundo plano sin demorar la respuesta web."""
+    return _en_segundo_plano(
+        enviar_correo_confirmacion_alerta, email, recurso, dias_antes, fecha_aviso, base_url=base_url
+    )

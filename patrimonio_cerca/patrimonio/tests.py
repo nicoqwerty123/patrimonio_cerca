@@ -46,6 +46,39 @@ class PatrimonioTests(TestCase):
         self.assertEqual(self.client.get(f"/lugar/{act.pk}/").status_code, 200)
 
 
+class RegistroTests(TestCase):
+    """El registro debe crear la cuenta y responder de inmediato (correo en segundo plano)."""
+
+    def test_registro_crea_usuario_y_redirige(self):
+        from django.contrib.auth.models import User
+
+        datos = {
+            "username": "visitante2026",
+            "email": "visitante2026@example.com",
+            "password1": "Patrimonio#2026",
+            "password2": "Patrimonio#2026",
+        }
+        resp = self.client.post("/registro/", datos)
+        self.assertEqual(resp.status_code, 302)
+        user = User.objects.get(username="visitante2026")
+        self.assertEqual(user.email, "visitante2026@example.com")
+        self.assertTrue(user.check_password("Patrimonio#2026"))
+
+    def test_registro_rechaza_correo_duplicado(self):
+        from django.contrib.auth.models import User
+
+        User.objects.create_user("previo", "ya_usado@example.com", "Previo#2026")
+        datos = {
+            "username": "otro_usuario",
+            "email": "YA_USADO@example.com",
+            "password1": "Patrimonio#2026",
+            "password2": "Patrimonio#2026",
+        }
+        resp = self.client.post("/registro/", datos)
+        self.assertEqual(resp.status_code, 200)  # vuelve a mostrar el formulario
+        self.assertIn(b"Ya existe una cuenta registrada", resp.content)
+
+
 class NuevasFuncionesTests(TestCase):
     @classmethod
     def setUpTestData(cls):

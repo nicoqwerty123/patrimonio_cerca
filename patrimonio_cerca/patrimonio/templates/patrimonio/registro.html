@@ -147,6 +147,15 @@
     if (p2) {
       p2.addEventListener("input", verificarMatch);
     }
+
+    const form = document.getElementById("form-registro");
+    const btnSubmit = form ? form.querySelector("button[type='submit']") : null;
+    if (form && btnSubmit) {
+      form.addEventListener("submit", function() {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "Creando cuenta y entrando...";
+      });
+    }
   })();
 </script>
 {% endblock %}
