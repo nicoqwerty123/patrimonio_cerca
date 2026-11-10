@@ -18,9 +18,18 @@ _cargar_env()
 
 # En producción, definir la variable de entorno DJANGO_SECRET_KEY
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-cambiar-en-produccion")
-DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
+# En producción (Render) DEBUG queda desactivado por seguridad: los errores muestran
+# una página genérica sin exponer código ni configuración. En desarrollo local,
+# definir DJANGO_DEBUG=True en el archivo .env para ver el detalle de los errores.
+DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".onrender.com", "*"]
+# Dominios autorizados a servir la app. Para agregar un dominio propio en el futuro,
+# definir DJANGO_ALLOWED_HOSTS en las variables de entorno (separados por coma).
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,.onrender.com").split(",")
+    if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -43,6 +52,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# Cookies de sesion y CSRF solo via HTTPS en produccion (Render sirve siempre por HTTPS).
+# En desarrollo local (DEBUG=True) se permiten http:// para no romper 127.0.0.1:8000.
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 ROOT_URLCONF = "config.urls"
 
